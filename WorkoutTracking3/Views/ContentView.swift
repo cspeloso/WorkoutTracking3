@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @ObservedObject var userData = UserData()
+    
+//    let exercises: [Exercise] = Bundle.main.decode("exercises.json")
+
     var body: some View {
-        Text("Hello, world!")
-            .padding()
+        RoutineView()
+            .environmentObject(userData)
     }
 }
 
