@@ -10,7 +10,7 @@ import SwiftUI
 struct ExerciseView: View {
     
     let exercises: [Exercise] = Bundle.main.decode("exercises.json")
-    
+
     var body: some View {
         NavigationView {
             List {

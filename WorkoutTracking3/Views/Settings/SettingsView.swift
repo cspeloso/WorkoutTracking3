@@ -10,7 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         NavigationView {
-            Text("Settings view")
+            Text("Settings View")
                 .navigationTitle("Settings")
         }
     }
