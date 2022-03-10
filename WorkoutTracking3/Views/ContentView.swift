@@ -14,8 +14,24 @@ struct ContentView: View {
 //    let exercises: [Exercise] = Bundle.main.decode("exercises.json")
 
     var body: some View {
-        RoutineView()
-            .environmentObject(userData)
+        TabView {
+            RoutineView()
+                .tabItem {
+                    Image(systemName: "list.bullet.circle.fill")
+                    Text("Routines")
+                }
+            ExerciseView()
+                .tabItem {
+                    Image(systemName: "figure.walk.circle.fill")
+                    Text("Exercises")
+                }
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gear")
+                    Text("Settings")
+                }
+        }
+        .environmentObject(userData)
     }
 }
 
