@@ -13,13 +13,16 @@ struct Workout: Identifiable, Codable {
     var name: String
     var sets: [Workout.Set]
     
+    var loggedSets: [LoggedSet]
+    
     enum CodingKeys: CodingKey {
-        case name, sets
+        case name, sets, loggedSets
     }
     
-    init(name: String, sets: [Workout.Set]){
+    init(name: String, sets: [Workout.Set], loggedSets: [LoggedSet]){
         self.name = name
         self.sets = sets
+        self.loggedSets = loggedSets
     }
     
     init(from decoder: Decoder) throws {
@@ -27,6 +30,7 @@ struct Workout: Identifiable, Codable {
         
         name = try container.decode(String.self, forKey: .name)
         sets = try container.decode([Set].self, forKey: .sets)
+        loggedSets = try container.decode([LoggedSet].self, forKey: .loggedSets)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -34,6 +38,7 @@ struct Workout: Identifiable, Codable {
         
         try container.encode(name, forKey: .name)
         try container.encode(sets, forKey: .sets)
+        try container.encode(loggedSets, forKey: .loggedSets)
     }
     
     
@@ -71,4 +76,36 @@ struct Workout: Identifiable, Codable {
         
     }
     
+    struct LoggedSet: Identifiable, Codable {
+        
+        var id = UUID()
+        
+        var sets: [Workout.Set]
+        
+        var loggedOnDate: Date
+        
+        enum CodingKeys: CodingKey {
+            case sets, loggedOnDate
+        }
+        
+        init(sets: [Workout.Set], loggedOnDate: Date){
+            self.sets = sets
+            self.loggedOnDate = loggedOnDate
+        }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            sets = try container.decode([Workout.Set].self, forKey: .sets)
+            loggedOnDate = try container.decode(Date.self, forKey: .loggedOnDate)
+        }
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            
+            try container.encode(sets, forKey: .sets)
+            try container.encode(loggedOnDate, forKey: .loggedOnDate)
+        }
+        
+    }
 }

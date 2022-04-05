@@ -12,7 +12,7 @@ struct AddWorkoutView: View {
     @Binding var workouts: [Workout]
     
     
-    @State private var newWorkout: Workout = Workout(name: "", sets: [])
+    @State private var newWorkout: Workout = Workout(name: "", sets: [], loggedSets: [])
     
     @Environment(\.presentationMode) var mode: Binding<PresentationMode>
 

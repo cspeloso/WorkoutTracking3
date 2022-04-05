@@ -89,4 +89,118 @@
        "formImage":"calf-raise-form",
        "musclesImage":"calf-raise-muscles"
    },
+   {
+     "name":"Incline Bench Press",
+     "description":"Sit on the bench and lean back. Hold a dumbbell in each hand, with hands positioned at your shoulders, elbows bent and angled down below your ribs. Relax your neck against the bench. Keep your feet flat on the floor.\nBrace your core and press both dumbbells straight up over your chest as you exhale. Keep your wrists straight (don't let them \"cock\" backward). At the top of the movement, the dumbbells should almost touch each other and your arms should be perpendicular to the floor.\nReverse the movement and slowly lower the dumbbells back to the top of your chest as you inhale. As you lower the dumbbells, your elbows should come down at roughly a 45-degree angle to your torso. They shouldn't splay out to the sides, pointing toward the side of the room. Instead, keep your elbows pointing to the floor.\nAim to complete sets of 8 to 12 reps. Start with one set and work up to two to three sets over time as you build strength. When you finish your set, safely exit the exercise by sitting up and placing the dumbbells on your knees before you stand up. Avoid dropping the dumbbells while you're lying on the incline bench.",
+     "formImage":"incline-bench-press-form",
+     "musclesImage":"incline-bench-press-muscles"
+   },
+   {
+     "name":"One Arm Row",
+     "description":"Stand to the right of your weight bench, holding a dumbbell in your right hand with your palm facing in.\nPlace your left knee and your left hand on top of the bench for support. Let your right arm hang down and a bit forward.\nPull your abdominals in and bend forward from the hips so that your back is naturally arched and roughly parallel to the floor, and your right knee is slightly bent.\nTilt your chin toward your chest so that your neck is in line with the rest of your spine.\nPull your right arm up until your elbow is pointing to the ceiling, your upper arm is parallel to the floor, and your hand comes to the outside of the ribcage.\nLower the weight slowly back down.",
+     "formImage":"one-arm-row-form",
+     "musclesImage":"one-arm-row-muscles"
+   },
+   {
+     "name":"Seated Overhead Press",
+     "description":"Sit down on the seat and grip the bar overhead at a comfortable position with hands slightly wider than a shoulder-width distance apart. Keep your torso upright and core tight.\nThen, unrack the barbell and slowly lower it down to chin level with elbows just slightly tucked in. Inhale during this portion of the exercise.\nNow, press the barbell back up but don’t lock out your elbows. Exhale during this portion of the exercise.\nRepeat for the desired number of reps.",
+     "formImage":"seated-overhead-press-form",
+     "musclesImage":"seated-overhead-press-muscles"
+   },
+   {
+     "name":"Assisted Pull-up",
+     "description":"Grasp the handles with a wider-than-shoulder-width pronated (overhand) grip.\nKneel onto the knee pad and allow your bodyweight to weigh down the knee pad so that you hang with your arms and shoulders stretched.\nExhale as you pull your body up until your chin rises over the bar.\nHold for a count of two and squeeze your back muscles.\nInhale as you lower your body until your arms and shoulders are fully stretched.",
+     "formImage":"assisted-pullup-form",
+     "musclesImage":"assisted-pullup-muscles"
+   },
+   {
+     "name":"Skull Crusher with Dumbbells",
+     "description":"Lie down on a bench or the floor holding a pair of dumbbells directly above your chest with your palms facing each other. Your feet should be flat on the floor.\nWithout moving your upper arms, bend your elbows and slowly lower the weights toward the sides of your head. Avoid flaring your elbows.",
+     "formImage":"skull-crusher-dumbbell-form",
+     "musclesImage":"skull-crusher-dumbbell-muscles"
+   },
+   {
+     "name":"Face Pull",
+     "description":"Reach up and grasp the handles with both hands with your palms facing in. Step back until your arms are fully extended, then engage your core and lean back slightly, positioning your body at a roughly 20-degree angle.\nPull the rope toward you just enough to start lifting the weight from the stack, then engage your shoulders, rolling them back to create good posture—you don't want your shoulders hunching or rolling forward. This is your starting position.\nPull the handles of the attachment straight toward your forehead. Keep your palms facing in as your elbows flare outward toward the sides, engaging the rear delts.\nReverse the movement and slowly extend your arms without allowing your shoulders or chest to roll forward as you extend—you want to maintain good posture throughout the exercise.",
+     "formImage":"face-pull-form",
+     "musclesImage":"face-pull-muscles"
+   },
+   {
+     "name":"Leg Curl",
+     "description":"Exhale and flex your knees, pulling your ankles as close to your buttocks as you can. Keep your hips firmly on the bench.\nHold briefly.\nInhale as you return your feet to the starting position in a slow and controlled movement.",
+     "formImage":"leg-curl-form",
+     "musclesImage":"leg-curl-muscles"
+   },
+   {
+     "name":"Leg Extension",
+     "description":"Place your hands on the hand bars.\nLift the weight while exhaling until your legs are almost straight. Do not lock your knees. Keep your back against the backrest and do not arch your back.\nExhale and lower the weight back to starting position.\nDo three sets of eight to 12 repetitions.",
+     "formImage":"leg-extension-form",
+     "musclesImage":"leg-extension-muscles"
+   },
+   {
+     "name":"Dumbbell Bench Press",
+     "description":"Lie on the bench with a dumbbell in each hand and your feet flat on the floor. You can rest your feet up on the bench if it's more comfortable.\nPush the dumbbells up so that your arms are directly over your shoulders and your palms are up.\nPull your abdominals in, and tilt your chin toward your chest.\nLower the dumbbells down and a little to the side until your elbows are slightly below your shoulders.\nRoll your shoulder blades back and down, like you’re pinching them together and accentuating your chest.\nPush the weights back up, taking care not to lock your elbows or allow your shoulder blades to rise off the bench.",
+     "formImage":"dumbbell-bench-press-form",
+     "musclesImage":"dumbbell-bench-press-muscles"
+   },
+   {
+     "name":"Lat Pulldown",
+     "description":"Grasp the bar with a wide grip with an overhand, knuckles-up grip. Other positions and grips are possible, but start with this standard position.\nPull the bar down until it's approximately level with the chin. Exhale on the downward motion. While shifting just slightly backward is OK, aim to keep your upper torso stationary. Keep your feet flat on the floor and engage your abs as you pull. The bottom of the motion should be where your elbows can't move downward any more without moving backward. Be sure to stop at that point and do not go lower.\nSqueeze the shoulder blades together while maintaining square shoulders.\nFrom the bottom position, with the bar close to your chin, slowly return the bar to the starting position while controlling its gradual ascent. Don't let it crash into the weight plates.\nContinue until you complete eight to 12 repetitions in a set. Rest, then continue to complete your program of sets.",
+     "formImage":"lat-pulldown-form",
+     "musclesImage":"lat-pulldown-muscles"
+   },
+   {
+     "name":"Cable Front Raise",
+     "description":"Assume a shoulder width stance with the cable running between your legs and grasp the handle with both hands using a pronated grip.\nInhale, brace your abs, and raise the arms vertically while keeping the elbows slightly bent.\nOnce the arms are parallel with the floor, slowly lower the handle back to the starting position.\nRepeat for the desired number of repetitions.",
+     "formImage":"cable-front-raise-form",
+     "musclesImage":"cable-front-raise-muscles"
+   },
+   {
+     "name":"Reverse Tricep Extension",
+     "description":"Se tup for the reverse one arm tricep extension by attaching a single grip handle to a high pulley cable and selecting the weight you want to use on the stack.\nStand facing the machine and grasp the handle with an underhand (palms facing up) grip.\nPull your elbow down and keep it tucked in at your side. You can use your free arm for support.\nKeeping your body fixed, slowly extend the arm as far as possible.\nPause and squeeze the tricep. Then slowly lower the weight.\nRepeat this motion for desired reps, and then repeat for the right arm.",
+     "formImage":"reverse-tricep-extension-form",
+     "musclesImage":"reverse-tricep-extension-muscles"
+   },
+   {
+     "name":"Overhead Tricep Extension",
+     "description":"Sit on a bench or chair cupping one end of a dumbbell in both hands directly overhead. This is the starting position.\nKeeping your chest up, core engaged, and back straight, lower the weight behind your head without moving your upper arms.\nPause, and then press the weight back up to the starting position.",
+     "formImage":"overhead-tricep-extension-form",
+     "musclesImage":"overhead-tricep-extension-muscles"
+   },
+   {
+     "name":"Preacher Curl",
+     "description":"Exhale as you curl the barbell upwards, towards your shoulders.\nHold for a count of two and squeeze your biceps.\nInhale as you lower the barbell until your elbows are fully extended.\nRepeat for the prescribed number of repetitions.",
+     "formImage":"preacher-curl-form",
+     "musclesImage":"preacher-curl-muscles"
+   },
+   {
+     "name":"Linear Leg Press",
+     "description":"Brace your abdominal muscles and push the platform away with your heels and forefoot. Your heels should remain flat on the footplate. The front of your foot or toes should never be used exclusively to move the pad forward.\nWhile exhaling, extend your legs and keep your head and back flat against the seat pad. Extend with slow control rather than with an explosive movement.\nPause at the top of the movement. Do not lock out your knees and ensure that they are not bowing out or in.\nWhile inhaling, return the footplate to the starting position by gradually bending the knees. Keep the feet and back flat throughout.\nIf you have never done leg presses before, start modestly with three sets of 10 leg presses. You can advance from there as you build strength.",
+     "formImage":"linear-leg-press-form",
+     "musclesImage":"linear-leg-press-muscles"
+   },
+   {
+     "name":"Lunges",
+     "description":"Start in a standing position with your feet hip-width apart.\nStep forward longer than a walking stride so one leg is ahead of your torso and the other is behind. Your foot should land flat and remain flat while it’s on the ground. Your rear heel will rise off of the ground.\nBend your knees to approximately 90 degrees as you lower yourself. Remember to keep your trunk upright and core engaged.\nThen, forcefully push off from your front leg to return to the starting position.",
+     "formImage":"lunges-form",
+     "musclesImage":"lunges-muscles"
+   },
+   {
+     "name":"Back Extension",
+     "description":"Brace the abdominals while holding the arms folded and maintaining the body in a horizontal position. Make sure the ankles are well anchored.\nBend slowly at the waist until the upper body is at 90 degrees to the lower body. Avoid arching your low back and squeeze your glutes at the top.\nExtend to the starting position and stretch upward just slightly so that the back is in hyperextension. Avoid arching your low back and squeeze your glutes at the top.\nReturn to starting position and repeat.",
+     "formImage":"back-extension-form",
+     "musclesImage":"back-extension-muscles"
+   },
+   {
+     "name":"Oblique Crunch",
+     "description":"Adjust the height of the seat on the seated ab-crunch machine so that the front of your shoulders rest against the padded lever. Insert the pin into the weight stack to select the load you'd like to lift. Sit on the machine and lift your arms over the lever pad.\nExhale and flex your waist to push against he padded lever and bend forward at the waist. Keep your hips in the seat. Maintain a slow cadence, avoiding any jerky movement in an attempt to lift more weight.\nInhale as you extend your waist and return to a vertical sitting position. Once you return to upright, go right into the next repetition. Continue until you’re finished with all your repetitions.",
+     "formImage":"oblique-crunch-form",
+     "musclesImage":"oblique-crunch-muscles"
+   },
+   {
+       "name":"Goblit Squat",
+       "description":"Starting position: Stand with your feet hip or shoulder-width apart, toes pointed straight ahead. Tighten your abs and hold the kettlebell at chest height by holding the sides of the handle. Pull the kettlebell close to your body and squeeze your shoulder blades together.\nSit your hips back and bend your knees to lower yourself into a squat. Keep the chest up as you squat and squat as low as you can while keeping your back straight (when your back starts to round, that's too low).\nDrive through the feet as you stand and squeeze your glutes as you return to a tall standing position.",
+       "formImage":"goblit-squat-form",
+       "musclesImage":"goblit-squat-muscles"
+   }
 ]

@@ -30,6 +30,7 @@ struct ExerciseView: View {
             }
             .navigationTitle("Exercises")
         }
+        .navigationViewStyle(.stack)
     }
 }
 

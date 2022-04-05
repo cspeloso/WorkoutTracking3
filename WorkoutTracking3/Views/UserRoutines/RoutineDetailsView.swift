@@ -38,7 +38,7 @@ struct RoutineDetailsView: View {
                 Text("Workouts")
             }
         }
-        .navigationTitle(routine.name)
+        .navigationTitle(routine.name != "" ? routine.name : routine.weekday)
         .toolbar {
             NavigationLink(destination: AddWorkoutView(workouts: $routine.workouts)){
                 Text("Add Workout")
@@ -53,7 +53,7 @@ struct RoutineDetailsView: View {
 
 struct RoutineDetailsView_Previews: PreviewProvider {
     
-    @State static var routine = Routine(name: "", weekday: "asjdfk", workouts: [Workout(name: "asdf", sets: [Workout.Set(reps: 10, weight: 55)])])
+    @State static var routine = Routine(name: "", weekday: "asjdfk", workouts: [Workout(name: "asdf", sets: [Workout.Set(reps: 10, weight: 55)], loggedSets: [])])
     
     static var previews: some View {
         RoutineDetailsView(routine: $routine)

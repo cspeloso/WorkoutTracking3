@@ -29,6 +29,10 @@
 		830B577327D9CBFD003A067E /* ExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B577227D9CBFD003A067E /* ExerciseView.swift */; };
 		830B577527D9CC4B003A067E /* ExerciseDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B577427D9CC4B003A067E /* ExerciseDetailsView.swift */; };
 		830B577827D9CD60003A067E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B577727D9CD60003A067E /* SettingsView.swift */; };
+		83205AA827E5584C0069C134 /* LoggedSetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83205AA727E5584C0069C134 /* LoggedSetEditView.swift */; };
+		83CA774227FA5EDD0027B144 /* NewListSets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83CA774127FA5EDD0027B144 /* NewListSets.swift */; };
+		83DA14E527E408300070B3C5 /* LoggedSetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DA14E427E408300070B3C5 /* LoggedSetsView.swift */; };
+		83F118FB27FBE1C600082A10 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F118FA27FBE1C600082A10 /* TestView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +59,10 @@
 		830B577227D9CBFD003A067E /* ExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseView.swift; sourceTree = "<group>"; };
 		830B577427D9CC4B003A067E /* ExerciseDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailsView.swift; sourceTree = "<group>"; };
 		830B577727D9CD60003A067E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		83205AA727E5584C0069C134 /* LoggedSetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetEditView.swift; sourceTree = "<group>"; };
+		83CA774127FA5EDD0027B144 /* NewListSets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewListSets.swift; sourceTree = "<group>"; };
+		83DA14E427E408300070B3C5 /* LoggedSetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetsView.swift; sourceTree = "<group>"; };
+		83F118FA27FBE1C600082A10 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +160,7 @@
 				830B576927D9BD1E003A067E /* WorkoutPicker.swift */,
 				830B576B27D9C0A8003A067E /* NewSetCreator.swift */,
 				830B576D27D9C5D5003A067E /* ListSets.swift */,
+				83CA774127FA5EDD0027B144 /* NewListSets.swift */,
 			);
 			path = FormElements;
 			sourceTree = "<group>";
@@ -164,6 +173,8 @@
 				830B576127D9B7EE003A067E /* RoutineDetailsView.swift */,
 				830B576727D9BBFE003A067E /* AddWorkoutView.swift */,
 				830B576527D9BB61003A067E /* WorkoutDetailsView.swift */,
+				83DA14E427E408300070B3C5 /* LoggedSetsView.swift */,
+				83205AA727E5584C0069C134 /* LoggedSetEditView.swift */,
 			);
 			path = UserRoutines;
 			sourceTree = "<group>";
@@ -181,6 +192,7 @@
 			isa = PBXGroup;
 			children = (
 				830B577727D9CD60003A067E /* SettingsView.swift */,
+				83F118FA27FBE1C600082A10 /* TestView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -263,6 +275,8 @@
 				830B576A27D9BD1E003A067E /* WorkoutPicker.swift in Sources */,
 				830B576E27D9C5D5003A067E /* ListSets.swift in Sources */,
 				830B576627D9BB61003A067E /* WorkoutDetailsView.swift in Sources */,
+				83DA14E527E408300070B3C5 /* LoggedSetsView.swift in Sources */,
+				83205AA827E5584C0069C134 /* LoggedSetEditView.swift in Sources */,
 				830B575C27D9B63B003A067E /* Exercise.swift in Sources */,
 				830B574027D9B53C003A067E /* ContentView.swift in Sources */,
 				830B575A27D9B629003A067E /* Workout.swift in Sources */,
@@ -273,6 +287,8 @@
 				830B576C27D9C0A8003A067E /* NewSetCreator.swift in Sources */,
 				830B576827D9BBFE003A067E /* AddWorkoutView.swift in Sources */,
 				830B575427D9B5E2003A067E /* Bundle-Decodable.swift in Sources */,
+				83F118FB27FBE1C600082A10 /* TestView.swift in Sources */,
+				83CA774227FA5EDD0027B144 /* NewListSets.swift in Sources */,
 				830B577527D9CC4B003A067E /* ExerciseDetailsView.swift in Sources */,
 				830B577827D9CD60003A067E /* SettingsView.swift in Sources */,
 			);
