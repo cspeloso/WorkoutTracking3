@@ -16,7 +16,7 @@ class UserData: ObservableObject, Codable {
     
     @Published var routines: [Routine] {
         didSet {
-            print("DIDSET FIRED!!")
+//            print("DIDSET FIRED!!")
             if let encoded = try? JSONEncoder().encode(routines) {
                 UserDefaults.standard.set(encoded, forKey: "UserDataFirstAttempt")
             }

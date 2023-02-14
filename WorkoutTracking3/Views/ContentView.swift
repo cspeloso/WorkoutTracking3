@@ -25,11 +25,14 @@ struct ContentView: View {
                     Image(systemName: "figure.walk.circle.fill")
                     Text("Exercises")
                 }
-//            SettingsView()
-            TestView()
+            
+//            TestView()
+                SettingsView()
                 .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
+                    Image(systemName: "info")
+                    Text("Info")
+//                    Image(systemName: "gear")
+//                    Text("Settings")
                 }
         }
         .environmentObject(userData)

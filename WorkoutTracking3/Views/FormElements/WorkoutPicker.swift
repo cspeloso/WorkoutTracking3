@@ -18,9 +18,19 @@ struct WorkoutPickerListView: View {
     var body: some View {
         List {
             ForEach(exercises.sorted(by: {$0.name < $1.name})) { exercise in
-                Button(exercise.name) {
+                Button(action: {
                     workoutName = exercise.name
                     self.mode.wrappedValue.dismiss()
+                }){
+                    HStack{
+                        Text(exercise.name)
+                        Spacer()
+                        Image(exercise.formImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width:75, height:30)
+                            .cornerRadius(5)
+                    }
                 }
                 .foregroundColor(.primary)
             }

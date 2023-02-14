@@ -1,15 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "Work It out.png",
+      "filename" : "WorkItOutBanner.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "WorkItOutBanner 2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "WorkItOutBanner 1.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

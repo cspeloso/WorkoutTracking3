@@ -11,20 +11,33 @@ struct WorkoutDetailsView: View {
     
     @Binding var workout: Workout
     
+    let exercises: [Exercise] = Bundle.main.decode("exercises.json")
+
+
     var body: some View {
         VStack {
             Form {
                 
-                //  Workout name
+//                //  Workout name
+//                Section {
+// //                    WorkoutPicker(workoutName: $workout.name)
+//                    Text(workout.name)
+//
+//                } header: {
+//                    Text("Workout")
+//                }
+//
+                //  Muscle Groups Image
                 Section {
-                    WorkoutPicker(workoutName: $workout.name)
-                } header: {
-                    Text("Workout")
+                    Image(exercises.filter{$0.name == workout.name}.first?.formImage ?? "")
+                        .resizable()
+                        .scaledToFit()
                 }
                 
                 //  add a new set
                 Section {
-                    NewSetCreator(sets: $workout.sets)
+//                    NewSetCreator(sets: $workout.sets)
+                    NewSetCreator2(sets: $workout.sets)
                 } header: {
                     Text("Add new sets")
                 }
@@ -33,7 +46,7 @@ struct WorkoutDetailsView: View {
                 Section {
                     NewListSets(sets: $workout.sets)
                 } header: {
-                    Text("Sets")
+                    Text("Today's Log")
                 }
                 
                 
@@ -62,14 +75,15 @@ struct WorkoutDetailsView: View {
                 )
                 .listRowBackground(Color(UIColor.systemGroupedBackground))
                 
-                //  History
+                
+//                  History
                 Section {
                     ZStack{
                         NavigationLink(destination: LoggedSetsView(workout: $workout)){
-                            
+
                         }
                         .opacity(0)
-                        
+
                         Text("**History**")
                             .padding(.vertical, 10)
                             .foregroundColor(.primary)
@@ -80,6 +94,9 @@ struct WorkoutDetailsView: View {
                         .stroke(Color(red: 255/255, green: 95/255, blue: 95/255), lineWidth: 3)
                 )
                 .listRowBackground(Color(UIColor.systemGroupedBackground))
+                
+                
+                
             }
         }
         .navigationBarTitle(workout.name)

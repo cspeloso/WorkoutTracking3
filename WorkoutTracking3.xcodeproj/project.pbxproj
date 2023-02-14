@@ -29,6 +29,7 @@
 		830B577327D9CBFD003A067E /* ExerciseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B577227D9CBFD003A067E /* ExerciseView.swift */; };
 		830B577527D9CC4B003A067E /* ExerciseDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B577427D9CC4B003A067E /* ExerciseDetailsView.swift */; };
 		830B577827D9CD60003A067E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B577727D9CD60003A067E /* SettingsView.swift */; };
+		831371B82806096000B4934E /* NewSetCreator2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831371B72806096000B4934E /* NewSetCreator2.swift */; };
 		83205AA827E5584C0069C134 /* LoggedSetEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83205AA727E5584C0069C134 /* LoggedSetEditView.swift */; };
 		83CA774227FA5EDD0027B144 /* NewListSets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83CA774127FA5EDD0027B144 /* NewListSets.swift */; };
 		83DA14E527E408300070B3C5 /* LoggedSetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DA14E427E408300070B3C5 /* LoggedSetsView.swift */; };
@@ -59,6 +60,7 @@
 		830B577227D9CBFD003A067E /* ExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseView.swift; sourceTree = "<group>"; };
 		830B577427D9CC4B003A067E /* ExerciseDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailsView.swift; sourceTree = "<group>"; };
 		830B577727D9CD60003A067E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		831371B72806096000B4934E /* NewSetCreator2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSetCreator2.swift; sourceTree = "<group>"; };
 		83205AA727E5584C0069C134 /* LoggedSetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetEditView.swift; sourceTree = "<group>"; };
 		83CA774127FA5EDD0027B144 /* NewListSets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewListSets.swift; sourceTree = "<group>"; };
 		83DA14E427E408300070B3C5 /* LoggedSetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetsView.swift; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 			children = (
 				830B576927D9BD1E003A067E /* WorkoutPicker.swift */,
 				830B576B27D9C0A8003A067E /* NewSetCreator.swift */,
+				831371B72806096000B4934E /* NewSetCreator2.swift */,
 				830B576D27D9C5D5003A067E /* ListSets.swift */,
 				83CA774127FA5EDD0027B144 /* NewListSets.swift */,
 			);
@@ -275,6 +278,7 @@
 				830B576A27D9BD1E003A067E /* WorkoutPicker.swift in Sources */,
 				830B576E27D9C5D5003A067E /* ListSets.swift in Sources */,
 				830B576627D9BB61003A067E /* WorkoutDetailsView.swift in Sources */,
+				831371B82806096000B4934E /* NewSetCreator2.swift in Sources */,
 				83DA14E527E408300070B3C5 /* LoggedSetsView.swift in Sources */,
 				83205AA827E5584C0069C134 /* LoggedSetEditView.swift in Sources */,
 				830B575C27D9B63B003A067E /* Exercise.swift in Sources */,

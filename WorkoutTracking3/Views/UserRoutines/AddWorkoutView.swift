@@ -21,6 +21,7 @@ struct AddWorkoutView: View {
         Form {
             
             //  Workout name
+            //  Choose a Workout
             Section {
                 WorkoutPicker(workoutName: $newWorkout.name)
             } header: {
