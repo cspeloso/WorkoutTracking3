@@ -37,7 +37,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		830B573A27D9B53C003A067E /* WorkoutTracking3.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorkoutTracking3.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		830B573A27D9B53C003A067E /* Work It Out.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Work It Out.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTracking3App.swift; sourceTree = "<group>"; };
 		830B573F27D9B53C003A067E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		830B574127D9B53D003A067E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -89,7 +89,7 @@
 		830B573B27D9B53C003A067E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				830B573A27D9B53C003A067E /* WorkoutTracking3.app */,
+				830B573A27D9B53C003A067E /* Work It Out.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -217,7 +217,7 @@
 			);
 			name = WorkoutTracking3;
 			productName = WorkoutTracking3;
-			productReference = 830B573A27D9B53C003A067E /* WorkoutTracking3.app */;
+			productReference = 830B573A27D9B53C003A067E /* Work It Out.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -439,7 +439,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -468,7 +468,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
