@@ -29,7 +29,7 @@ struct ContentView: View {
 //            TestView()
                 SettingsView()
                 .tabItem {
-                    Image(systemName: "info")
+                    Image(systemName: "info.circle.fill")
                     Text("Info")
 //                    Image(systemName: "gear")
 //                    Text("Settings")
