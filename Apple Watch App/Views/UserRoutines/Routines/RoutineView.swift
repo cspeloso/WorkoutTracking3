@@ -38,10 +38,10 @@ struct RoutineView: View {
             
             VStack {
             
-                Image("WorkItOutBanner")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 250, height: 150)
+//                Image("WorkItOutBanner")
+//                    .resizable()
+//                    .scaledToFit()
+//                    .frame(width: 250, height: 150)
                 
                 Form {
                     List {
@@ -84,11 +84,10 @@ struct RoutineView: View {
 
                     }
                 }
-                .navigationTitle("Routines")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing){
                         NavigationLink(destination: AddRoutine(routines: $userData.routines)){
-                            Text("Add routine")
+                            Text("+")
                         }
                     }
                 }
@@ -96,7 +95,7 @@ struct RoutineView: View {
             
             
         }
-        .navigationViewStyle(.stack)
+//        .navigationViewStyle(.stack)
         
         
         

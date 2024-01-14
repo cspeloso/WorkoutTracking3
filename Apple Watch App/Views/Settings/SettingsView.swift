@@ -50,7 +50,7 @@ struct SettingsView: View {
                 
             }
 //            .padding(0)
-            .navigationTitle("Settings")
+//            .navigationTitle("Settings")
 //            .background(.red)
 
         }

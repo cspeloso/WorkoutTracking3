@@ -54,7 +54,7 @@ struct ExerciseView: View {
                         }
                     }
                 }
-                .navigationTitle("Exercises")
+//                .navigationTitle("Exercises")
             }
         }
         .navigationViewStyle(.stack)

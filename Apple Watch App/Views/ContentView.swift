@@ -12,26 +12,18 @@ struct ContentView: View {
     @ObservedObject var userData = UserData()
     
     var body: some View {
-        TabView {
-            RoutineView()
-                .tabItem {
-                    Image(systemName: "list.bullet.circle.fill")
-                    Text("Routines")
+        NavigationView {
+            List {
+                NavigationLink(destination: RoutineView()) {
+                    Label("Routines", systemImage: "list.bullet.circle.fill")
                 }
-            ExerciseView()
-                .tabItem {
-                    Image(systemName: "figure.walk.circle.fill")
-                    Text("Exercises")
+                NavigationLink(destination: ExerciseView()) {
+                    Label("Exercises", systemImage: "figure.walk.circle.fill")
                 }
-            
-//            TestView()
-                SettingsView()
-                .tabItem {
-                    Image(systemName: "info.circle.fill")
-                    Text("Info")
-//                    Image(systemName: "gear")
-//                    Text("Settings")
+                NavigationLink(destination: SettingsView()) {
+                    Label("Info", systemImage: "info.circle.fill")
                 }
+            }
         }
         .environmentObject(userData)
     }
