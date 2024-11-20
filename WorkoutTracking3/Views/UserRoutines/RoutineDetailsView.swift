@@ -33,6 +33,7 @@ struct RoutineDetailsView: View {
                         }
                     }
                     .onDelete(perform: deleteWorkout)
+                    .onMove(perform: moveWorkout)
                 }
             } header: {
                 Text("Workouts")
@@ -48,6 +49,9 @@ struct RoutineDetailsView: View {
     
     func deleteWorkout(at offsets: IndexSet){
         routine.workouts.remove(atOffsets: offsets)
+    }
+    func moveWorkout(from source: IndexSet, to destination: Int){
+        routine.workouts.move(fromOffsets: source, toOffset: destination)
     }
 }
 
