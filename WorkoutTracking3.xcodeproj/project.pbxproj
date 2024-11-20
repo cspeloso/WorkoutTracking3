@@ -109,6 +109,8 @@
 		830B577227D9CBFD003A067E /* ExerciseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseView.swift; sourceTree = "<group>"; };
 		830B577427D9CC4B003A067E /* ExerciseDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailsView.swift; sourceTree = "<group>"; };
 		830B577727D9CD60003A067E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		830DC0C72CED8CC50080680C /* WorkoutTracking3.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WorkoutTracking3.entitlements; sourceTree = "<group>"; };
+		830DC0C82CED91430080680C /* Work It Out Apple Watch Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Work It Out Apple Watch Watch App.entitlements"; sourceTree = "<group>"; };
 		831371B72806096000B4934E /* NewSetCreator2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSetCreator2.swift; sourceTree = "<group>"; };
 		832007642AF0CE060070F906 /* MostRecentLoggedSetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MostRecentLoggedSetView.swift; sourceTree = "<group>"; };
 		83205AA727E5584C0069C134 /* LoggedSetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetEditView.swift; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 		830B573127D9B53C003A067E = {
 			isa = PBXGroup;
 			children = (
+				830DC0C82CED91430080680C /* Work It Out Apple Watch Watch App.entitlements */,
 				837BF3712B51AECD00EAD0F2 /* Shared */,
 				830B573C27D9B53C003A067E /* WorkoutTracking3 */,
 				837BF34D2B51A86300EAD0F2 /* Apple Watch App */,
@@ -187,6 +190,7 @@
 		830B573C27D9B53C003A067E /* WorkoutTracking3 */ = {
 			isa = PBXGroup;
 			children = (
+				830DC0C72CED8CC50080680C /* WorkoutTracking3.entitlements */,
 				830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */,
 				830B574127D9B53D003A067E /* Assets.xcassets */,
 				830B574327D9B53D003A067E /* Preview Content */,
@@ -446,7 +450,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1520;
-				LastUpgradeCheck = 1320;
+				LastUpgradeCheck = 1520;
 				TargetAttributes = {
 					830B573927D9B53C003A067E = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -580,6 +584,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -641,6 +646,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
@@ -698,8 +704,9 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WorkoutTracking3/WorkoutTracking3.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.5;
+				CURRENT_PROJECT_VERSION = 1.1;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracking3/Preview Content\"";
 				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
@@ -713,7 +720,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
 				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -728,8 +735,9 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WorkoutTracking3/WorkoutTracking3.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.5;
+				CURRENT_PROJECT_VERSION = 1.1;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracking3/Preview Content\"";
 				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
@@ -743,7 +751,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
 				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -759,6 +767,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = "Work It Out Apple Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Apple Watch App/Preview Content\"";
@@ -783,7 +792,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.2;
+				WATCHOS_DEPLOYMENT_TARGET = 10;
 			};
 			name = Debug;
 		};
@@ -794,6 +803,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = "Work It Out Apple Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Apple Watch App/Preview Content\"";
@@ -817,7 +827,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 10.2;
+				WATCHOS_DEPLOYMENT_TARGET = 10;
 			};
 			name = Release;
 		};
