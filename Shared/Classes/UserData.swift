@@ -6,6 +6,13 @@
 //
 
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
+
+#if canImport(WatchKit)
+import WatchKit
+#endif
 
 class UserData: ObservableObject, Codable {
     
@@ -28,20 +35,22 @@ class UserData: ObservableObject, Codable {
     
     init() {
         let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
 
         if let data = store.data(forKey: "UserDataRoutines") {
             print("Data exists in iCloud: \(String(data: data, encoding: .utf8) ?? "Invalid JSON")")
         } else {
             print("No data found in iCloud.")
         }
-        
 
         if let data = NSUbiquitousKeyValueStore.default.data(forKey: "UserDataRoutines") {
+            print("iCloud USER DATA LOCATED")
             if let decoded = try? JSONDecoder().decode([Routine].self, from: data){
                 self.routines = decoded
                 return
             }
         }else if let localData = UserDefaults.standard.data(forKey: "UserDataFirstAttempt") {
+            print("LOCAL USER DATA LOCATED")
             if let decoded = try? JSONDecoder().decode([Routine].self, from: localData){
                 self.routines = decoded
                 saveToCloud()
@@ -57,6 +66,11 @@ class UserData: ObservableObject, Codable {
 //            }
 //        }
 //
+        defer {
+            observeCloudChanges()
+            observeAppLifecycle()  // ✅ Start listening for app resume events
+        }
+        
         routines = []
     }
     
@@ -75,21 +89,29 @@ class UserData: ObservableObject, Codable {
     }
     
     private func saveToCloud() {
+        print("attempting to save")
         if let encoded = try? JSONEncoder().encode(routines) {
             let store = NSUbiquitousKeyValueStore.default
             store.set(encoded, forKey: "UserDataRoutines")
             store.synchronize()
-        } else{
-            print("There was an issue encoding values.")
-        }
-        
-        let store = NSUbiquitousKeyValueStore.default
 
-        if let data = store.data(forKey: "UserDataRoutines") {
-            print("Data exists in iCloud: \(String(data: data, encoding: .utf8) ?? "Invalid JSON")")
+            let appType = isWatchApp() ? "⌚ WATCH APP" : "📱 IOS APP"
+
+            if let storedData = store.data(forKey: "UserDataRoutines") {
+                print("\(appType) - 📡 SAVED TO ICLOUD: \(String(data: storedData, encoding: .utf8) ?? "Invalid JSON")")
+            } else {
+                print("\(appType) - ⚠️ iCloud did not save data.")
+            }
         } else {
-            print("No data found in iCloud.")
+            print("❌ Failed to encode routines.")
         }
+    }
+    func isWatchApp() -> Bool {
+        #if os(watchOS)
+        return true
+        #else
+        return false
+        #endif
     }
     
     //  Handles data updates from iCloud
@@ -102,12 +124,19 @@ class UserData: ObservableObject, Codable {
     
     private func loadFromCloud()
     {
+        print("LOADFROMCLOUD FUNCTION CALLED")
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+        
         if let data = NSUbiquitousKeyValueStore.default.data(forKey: "UserDataRoutines") {
             if let decoded = try? JSONDecoder().decode([Routine].self, from: data){
                 DispatchQueue.main.async {
                     self.routines = decoded
                 }
             }
+        }
+        else {
+            print("No data found in iCloud.")
         }
     }
     
@@ -119,6 +148,29 @@ class UserData: ObservableObject, Codable {
         } else {
             completion(nil)
         }
+    }
+
+    func observeAppLifecycle() {
+        #if os(iOS)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        #elseif os(watchOS)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: WKApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        #endif
+    }
+    
+    @objc private func handleAppDidBecomeActive() {
+        print("🔄 App became active. Fetching latest data from iCloud.")
+        loadFromCloud()
     }
     
 //    //  gets user data json

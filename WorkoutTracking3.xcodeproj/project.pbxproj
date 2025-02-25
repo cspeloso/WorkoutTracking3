@@ -110,7 +110,6 @@
 		830B577427D9CC4B003A067E /* ExerciseDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailsView.swift; sourceTree = "<group>"; };
 		830B577727D9CD60003A067E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		830DC0C72CED8CC50080680C /* WorkoutTracking3.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WorkoutTracking3.entitlements; sourceTree = "<group>"; };
-		830DC0C82CED91430080680C /* Work It Out Apple Watch Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Work It Out Apple Watch Watch App.entitlements"; sourceTree = "<group>"; };
 		831371B72806096000B4934E /* NewSetCreator2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSetCreator2.swift; sourceTree = "<group>"; };
 		832007642AF0CE060070F906 /* MostRecentLoggedSetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MostRecentLoggedSetView.swift; sourceTree = "<group>"; };
 		83205AA727E5584C0069C134 /* LoggedSetEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetEditView.swift; sourceTree = "<group>"; };
@@ -144,6 +143,7 @@
 		837BF3AC2B51B3E800EAD0F2 /* ExerciseDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailsView.swift; sourceTree = "<group>"; };
 		837BF3AF2B51B40E00EAD0F2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		837BF3B12B51B41400EAD0F2 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
+		83C6E3962D6DAA87003D546B /* Work It Out Apple Watch Watch App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Work It Out Apple Watch Watch App.entitlements"; sourceTree = "<group>"; };
 		83CA774127FA5EDD0027B144 /* NewListSets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewListSets.swift; sourceTree = "<group>"; };
 		83DA14E427E408300070B3C5 /* LoggedSetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetsView.swift; sourceTree = "<group>"; };
 		83F118FA27FBE1C600082A10 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
@@ -170,7 +170,6 @@
 		830B573127D9B53C003A067E = {
 			isa = PBXGroup;
 			children = (
-				830DC0C82CED91430080680C /* Work It Out Apple Watch Watch App.entitlements */,
 				837BF3712B51AECD00EAD0F2 /* Shared */,
 				830B573C27D9B53C003A067E /* WorkoutTracking3 */,
 				837BF34D2B51A86300EAD0F2 /* Apple Watch App */,
@@ -267,6 +266,7 @@
 		837BF34D2B51A86300EAD0F2 /* Apple Watch App */ = {
 			isa = PBXGroup;
 			children = (
+				83C6E3962D6DAA87003D546B /* Work It Out Apple Watch Watch App.entitlements */,
 				837BF34E2B51A86300EAD0F2 /* Work_It_Out_Apple_WatchApp.swift */,
 				837BF3522B51A86400EAD0F2 /* Assets.xcassets */,
 				837BF3542B51A86400EAD0F2 /* Preview Content */,
@@ -767,7 +767,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_ENTITLEMENTS = "Work It Out Apple Watch Watch App.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Apple Watch App/Work It Out Apple Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Apple Watch App/Preview Content\"";
@@ -803,7 +803,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CODE_SIGN_ENTITLEMENTS = "Work It Out Apple Watch Watch App.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Apple Watch App/Work It Out Apple Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Apple Watch App/Preview Content\"";
