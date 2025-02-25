@@ -706,7 +706,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracking3/WorkoutTracking3.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.1;
+				CURRENT_PROJECT_VERSION = 1.1.1;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracking3/Preview Content\"";
 				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
@@ -720,7 +720,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
 				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -737,7 +737,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WorkoutTracking3/WorkoutTracking3.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.1;
+				CURRENT_PROJECT_VERSION = 1.1.1;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracking3/Preview Content\"";
 				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
@@ -751,7 +751,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
 				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -769,7 +769,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "Apple Watch App/Work It Out Apple Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.1.1;
 				DEVELOPMENT_ASSET_PATHS = "\"Apple Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
@@ -783,7 +783,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3.watchkitapp;
 				PRODUCT_NAME = "Work It Out";
 				SDKROOT = watchos;
@@ -805,7 +805,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "Apple Watch App/Work It Out Apple Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.1.1;
 				DEVELOPMENT_ASSET_PATHS = "\"Apple Watch App/Preview Content\"";
 				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
@@ -819,7 +819,7 @@
 					"@executable_path/Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3.watchkitapp;
 				PRODUCT_NAME = "Work It Out";
 				SDKROOT = watchos;
