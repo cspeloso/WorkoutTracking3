@@ -88,7 +88,7 @@ class UserData: ObservableObject, Codable {
         try container.encode(routines, forKey: .routines)
     }
     
-    private func saveToCloud() {
+    func saveToCloud() {
         print("attempting to save")
         if let encoded = try? JSONEncoder().encode(routines) {
             let store = NSUbiquitousKeyValueStore.default
