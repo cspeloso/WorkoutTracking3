@@ -8,122 +8,105 @@
 import SwiftUI
 
 struct WorkoutDetailsView: View {
-    
+
     @Binding var workout: Workout
     @State private var showAlert = false
-    @State private var todaysDate = DateFormatter()
-    
-    
-    
-    let exercises: [Exercise] = Bundle.main.decode("exercises.json")
-    
+    @State private var navigateToHistory = false
 
+    // Load exercise metadata once
+    private let exercises: [Exercise] = Bundle.main.decode("exercises.json")
 
     var body: some View {
         VStack {
             Form {
-                
-//                //  Workout name
-//                Section {
-// //                    WorkoutPicker(workoutName: $workout.name)
-//                    Text(workout.name)
-//
-//                } header: {
-//                    Text("Workout")
-//                }
-//
-                //  Muscle Groups Image
-                if(exercises.filter{$0.name == workout.name}.first?.formImage ?? "" != ""){
+
+                // Muscle Groups Image (only if available)
+                if let imageName = exercises.first(where: { $0.name == workout.name })?.formImage,
+                   !imageName.isEmpty {
                     Section {
-                        Image(exercises.filter{$0.name == workout.name}.first?.formImage ?? "")
+                        Image(imageName)
                             .resizable()
                             .scaledToFit()
                     }
                 }
-                
-                //  add a new set
+
+                // Add new set
                 Section {
-//                    NewSetCreator(sets: $workout.sets)
                     NewSetCreator2(sets: $workout.sets)
                 } header: {
                     Text("Add new sets")
                 }
-                
-                //  sets list
+
+                // Sets list
                 Section {
                     NewListSets(sets: $workout.sets)
                 } header: {
                     Text("Set started: \(workout.getStartDateStr())")
                 }
-                
-                
-                //  New Log
-                Section{
-                    ZStack {
-                        NavigationLink(""){
-                            //
-                        }
-                        .opacity(0)
-                        .disabled(true)
-                        
-                        Button("aaa"){
-                            logCurrentSet()
-                            let impactMed = UIImpactFeedbackGenerator(style: .heavy)
-                            impactMed.impactOccurred()
-                        }
-                        .opacity(0)
-                        
-                        Text("**New Log**")
-                            .padding(.vertical, 10)
-                            .foregroundColor(.primary)
-                    }
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(Color(red: 255/255, green: 95/255, blue: 95/255), lineWidth: 3)
-                )
-                .listRowBackground(Color(UIColor.systemGroupedBackground))
-                
-                
-//                  History
+
+                // New Log action (real button)
                 Section {
-                    ZStack{
-                        NavigationLink(destination: LoggedSetsView(workout: $workout)){
-
-                        }
-                        .opacity(0)
-
-                        Text("**History**")
+                    Button {
+                        logCurrentSet()
+                        let impact = UIImpactFeedbackGenerator(style: .heavy)
+                        impact.impactOccurred()
+                    } label: {
+                        Text("New Log")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.vertical, 10)
                             .foregroundColor(.primary)
                     }
+                    .buttonStyle(.plain)
                 }
                 .overlay(
                     RoundedRectangle(cornerRadius: 5)
                         .stroke(Color(red: 255/255, green: 95/255, blue: 95/255), lineWidth: 3)
                 )
                 .listRowBackground(Color(UIColor.systemGroupedBackground))
-                
-                
-                //  Most recent log
+
+                // History action (styled like New Log, no chevron)
+                Section {
+                    Button {
+                        navigateToHistory = true
+                    } label: {
+                        Text("History")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 10)
+                            .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.plain)
+                    // Hidden NavigationLink to perform the navigation without the disclosure indicator
+                    .background(
+                        NavigationLink(
+                            destination: LoggedSetsView(workout: $workout),
+                            isActive: $navigateToHistory
+                        ) { EmptyView() }
+                        .hidden()
+                    )
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color(red: 255/255, green: 95/255, blue: 95/255), lineWidth: 3)
+                )
+                .listRowBackground(Color(UIColor.systemGroupedBackground))
+
+                // Most recent log
                 Section {
                     VStack {
                         if let mostRecentLoggedSet = workout.getMostRecentLoggedSet() {
                             MostRecentLoggedSetView(mostRecentLoggedSet: mostRecentLoggedSet)
-                        }
-                        else {
+                        } else {
                             Text("No past logged sets available.")
                         }
                     }
                 }
-                
-                
-                
             }
         }
         .navigationBarTitle(workout.name)
         .navigationBarTitleDisplayMode(.inline)
-        .alert(isPresented: $showAlert){
+        .alert(isPresented: $showAlert) {
             Alert(
                 title: Text("Error"),
                 message: Text("Cannot log an empty set."),
@@ -131,26 +114,18 @@ struct WorkoutDetailsView: View {
             )
         }
     }
-    
-    
-    func logCurrentSet() {
-        if (!workout.sets.isEmpty){
-            workout.startDate = Date()
-            let newLoggedSet: Workout.LoggedSet = Workout.LoggedSet(sets: workout.sets, loggedOnDate: workout.startDate)
-            workout.loggedSets.append(newLoggedSet)
-            workout.sets = []
-        }
-        else {
+
+    // Ensure UI-driving mutations happen on the main actor
+    @MainActor
+    private func logCurrentSet() {
+        guard !workout.sets.isEmpty else {
             showAlert = true
+            return
         }
+
+        workout.startDate = Date()
+        let newLoggedSet = Workout.LoggedSet(sets: workout.sets, loggedOnDate: workout.startDate)
+        workout.loggedSets.append(newLoggedSet)
+        workout.sets.removeAll()
     }
 }
-
-//struct WorkoutDetailsView_Previews: PreviewProvider {
-//    
-//    @State static var workout: Workout = Workout(name: "test", sets: [], loggedSets: [])
-//    
-//    static var previews: some View {
-//        WorkoutDetailsView(workout: $workout)
-//    }
-//}

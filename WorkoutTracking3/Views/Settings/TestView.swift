@@ -11,7 +11,9 @@ import SwiftUI
 
 struct TestView: View {
     
-    @State private var userData: UserData = UserData()
+//    @State private var userData: UserData = UserData()
+    @EnvironmentObject var userData: UserData
+
     
     var body: some View {
         VStack {

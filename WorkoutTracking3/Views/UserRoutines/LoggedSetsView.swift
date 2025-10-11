@@ -57,7 +57,7 @@ struct LoggedSetsView: View {
             
             List {
                 
-                ForEach($workout.loggedSets.sorted(by: {$0.loggedOnDate.wrappedValue < $1.loggedOnDate.wrappedValue})) { $ls in
+                ForEach($workout.loggedSets.sorted(by: {$0.loggedOnDate.wrappedValue > $1.loggedOnDate.wrappedValue})) { $ls in
                     Section {
                         VStack(alignment: .leading){
                             NavigationLink(destination: LoggedSetEditView(loggedSet: $ls)){

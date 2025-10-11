@@ -12,6 +12,7 @@ struct WorkoutTracking3App: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(UserData.shared)
         }
     }
 }

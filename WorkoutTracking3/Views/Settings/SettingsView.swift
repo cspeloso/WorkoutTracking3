@@ -10,7 +10,9 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     
-    @ObservedObject var userData = UserData()
+//    @ObservedObject var userData = UserData()
+    @EnvironmentObject var userData: UserData
+
     
     @State private var isFileImporterPresented = false
     @State private var importError: String?
@@ -108,6 +110,7 @@ struct SettingsView: View {
                         let decodedRoutines = try JSONDecoder().decode([Routine].self, from: data)
                         
                         DispatchQueue.main.async {
+                            print("🔄 Overwriting routines and saving to iCloud")
                             userData.routines = decodedRoutines
                             userData.saveToCloud()
                         }

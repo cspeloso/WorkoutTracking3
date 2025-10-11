@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
 
-    @ObservedObject var userData = UserData()
+//    @ObservedObject var userData = UserData()
     
     var body: some View {
         NavigationView {
@@ -25,7 +25,7 @@ struct ContentView: View {
                 }
             }
         }
-        .environmentObject(userData)
+        .environmentObject(UserData.shared)
     }
 }
 

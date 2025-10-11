@@ -8,10 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    
-    @ObservedObject var userData = UserData()
-    
-//    let exercises: [Exercise] = Bundle.main.decode("exercises.json")
+//    @EnvironmentObject var userData: UserData  // No @StateObject here
 
     var body: some View {
         TabView {
@@ -25,22 +22,12 @@ struct ContentView: View {
                     Image(systemName: "figure.walk.circle.fill")
                     Text("Exercises")
                 }
-            
-//            TestView()
-                SettingsView()
+            SettingsView()
                 .tabItem {
                     Image(systemName: "info.circle.fill")
                     Text("Info")
-//                    Image(systemName: "gear")
-//                    Text("Settings")
                 }
+                .environmentObject(UserData.shared)
         }
-        .environmentObject(userData)
     }
 }
-
-//struct ContentView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        ContentView()
-//    }
-//}

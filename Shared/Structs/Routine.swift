@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Routine: Identifiable, Codable {
+struct Routine: Identifiable, Codable, Equatable {
     
     var id = UUID()
     
@@ -42,4 +42,9 @@ struct Routine: Identifiable, Codable {
         try container.encode(workouts, forKey: .workouts)
     }
     
+    static func == (lhs: Routine, rhs: Routine) -> Bool {
+        return lhs.name == rhs.name &&
+        lhs.weekday == rhs.weekday &&
+        lhs.workouts == rhs.workouts
+    }
 }

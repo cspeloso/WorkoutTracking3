@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Workout: Identifiable, Codable {
+struct Workout: Identifiable, Codable, Equatable {
     var id = UUID()
     
     var name: String
@@ -77,9 +77,16 @@ struct Workout: Identifiable, Codable {
         return sortedLoggedSets.first
     }
     
+    static func == (lhs: Workout, rhs: Workout) -> Bool {
+        return lhs.name == rhs.name &&
+            lhs.sets == rhs.sets &&
+            lhs.loggedSets == rhs.loggedSets &&
+            lhs.startDate == rhs.startDate
+    }
     
     
-    struct Set: Identifiable, Codable {
+    
+    struct Set: Identifiable, Codable, Equatable {
         
         var id = UUID()
         
@@ -113,7 +120,7 @@ struct Workout: Identifiable, Codable {
         
     }
     
-    struct LoggedSet: Identifiable, Codable {
+    struct LoggedSet: Identifiable, Codable, Equatable {
         
         var id = UUID()
         

@@ -1,10 +1,3 @@
-//
-//  UserData.swift
-//  Work It Out Apple Watch Watch App
-//
-//  Created by Chris Peloso on 1/12/24.
-//
-
 import Foundation
 #if canImport(UIKit)
 import UIKit
@@ -15,97 +8,95 @@ import WatchKit
 #endif
 
 class UserData: ObservableObject, Codable {
-    
+    // ✅ Singleton instance
+    static let shared = UserData()
+
+    private var saveTask: DispatchWorkItem?
+
     enum CodingKeys: CodingKey {
         case routines
     }
-    
+
     @Published var routines: [Routine] {
         didSet {
-            saveToCloud()
-//            print("DIDSET FIRED!!")
-//            if let encoded = try? JSONEncoder().encode(routines) {
-//                UserDefaults.standard.set(encoded, forKey: "UserDataFirstAttempt")
-//            }
-//            else {
-//                print("There was an issue encoding values.")
-//            }
+            if oldValue != routines { // ✅ Only save if there's an actual change
+                saveToCloud()
+            }
         }
     }
-    
-    init() {
+
+    // ✅ Private initializer (prevents multiple instances)
+    private init() {
+        print("🔄 UserData SINGLETON INIT at \(Date())")
+
+        self.routines = []
+
         let store = NSUbiquitousKeyValueStore.default
         store.synchronize()
 
-        if let data = store.data(forKey: "UserDataRoutines") {
-            print("Data exists in iCloud: \(String(data: data, encoding: .utf8) ?? "Invalid JSON")")
+        if let data = store.data(forKey: "UserDataRoutines"),
+           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
+            print("📡 iCloud USER DATA LOCATED \(data)")
+            self.routines = decoded
+        } else if let localData = UserDefaults.standard.data(forKey: "UserDataFirstAttempt"),
+                  let decoded = try? JSONDecoder().decode([Routine].self, from: localData) {
+            print("💾 LOCAL USER DATA LOCATED")
+            self.routines = decoded
+            saveToCloud()
+            UserDefaults.standard.removeObject(forKey: "UserDataFirstAttempt")
         } else {
-            print("No data found in iCloud.")
+            print("❌ No user data found locally or in the cloud.")
         }
 
-        if let data = NSUbiquitousKeyValueStore.default.data(forKey: "UserDataRoutines") {
-            print("iCloud USER DATA LOCATED")
-            if let decoded = try? JSONDecoder().decode([Routine].self, from: data){
-                self.routines = decoded
-                return
-            }
-        }else if let localData = UserDefaults.standard.data(forKey: "UserDataFirstAttempt") {
-            print("LOCAL USER DATA LOCATED")
-            if let decoded = try? JSONDecoder().decode([Routine].self, from: localData){
-                self.routines = decoded
-                saveToCloud()
-                UserDefaults.standard.removeObject(forKey: "UserDataFirstAttempt")
-                return
-            }
-        }
-        
-//        if let data = UserDefaults.standard.data(forKey: "UserDataFirstAttempt") {
-//            if let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
-//                self.routines = decoded
-//                return
-//            }
-//        }
-//
-        defer {
-            observeCloudChanges()
-            observeAppLifecycle()  // ✅ Start listening for app resume events
-        }
-        
-        routines = []
+        observeCloudChanges()
+        observeAppLifecycle() // ✅ Added foreground detection
     }
-    
-    init(routines: [Routine]) {
-        self.routines = routines
-    }
-    
+
+    // ✅ Ensure decoding still works with singleton
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        routines = try container.decode([Routine].self, forKey: .routines)
+        self.routines = try container.decode([Routine].self, forKey: .routines)
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(routines, forKey: .routines)
     }
-    
+
+    // ✅ Optimized `saveToCloud()` with iCloud sync
     func saveToCloud() {
-        print("attempting to save")
-        if let encoded = try? JSONEncoder().encode(routines) {
-            let store = NSUbiquitousKeyValueStore.default
-            store.set(encoded, forKey: "UserDataRoutines")
-            store.synchronize()
+        saveTask?.cancel() // Cancel any previous save attempt
 
-            let appType = isWatchApp() ? "⌚ WATCH APP" : "📱 IOS APP"
+        let task = DispatchWorkItem {
+            do {
+                let encoded = try JSONEncoder().encode(self.routines)
+                let store = NSUbiquitousKeyValueStore.default
+                store.set(encoded, forKey: "UserDataRoutines")
+                
+                // ✅ Force immediate sync to iCloud
+                store.synchronize()
 
-            if let storedData = store.data(forKey: "UserDataRoutines") {
-                print("\(appType) - 📡 SAVED TO ICLOUD: \(String(data: storedData, encoding: .utf8) ?? "Invalid JSON")")
-            } else {
-                print("\(appType) - ⚠️ iCloud did not save data.")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    if let data = store.data(forKey: "UserDataRoutines") {
+                        if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                           let jsonString = String(data: try! JSONSerialization.data(withJSONObject: jsonObject), encoding: .utf8) {
+                            print("📡 SAVED TO ICLOUD:\n\(jsonString)")
+                        } else {
+                            print("📡 SAVED TO ICLOUD, but could not decode JSON. Data size: \(data.count) bytes")
+                        }
+                    } else {
+                        print("⚠️ iCloud did not save data.")
+                    }
+                }
+            } catch {
+                print("❌ Failed to encode routines: \(error.localizedDescription)")
             }
-        } else {
-            print("❌ Failed to encode routines.")
         }
+
+        saveTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: task) // ✅ Debounced iCloud saving
     }
+
     func isWatchApp() -> Bool {
         #if os(watchOS)
         return true
@@ -113,34 +104,44 @@ class UserData: ObservableObject, Codable {
         return false
         #endif
     }
-    
-    //  Handles data updates from iCloud
+
+    // ✅ Ensure Apple Watch & iOS listen for updates
     func observeCloudChanges() {
         NotificationCenter.default.addObserver(
-            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: nil, queue: .main) { _ in
-                self.loadFromCloud()
-            }
+            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🌩️ iCloud data changed, updating routines")
+            self.loadFromCloud()
+        }
     }
-    
-    private func loadFromCloud()
-    {
-        print("LOADFROMCLOUD FUNCTION CALLED")
+
+    // ✅ Prevents unnecessary iCloud reloads
+    private func loadFromCloud() {
+
         let store = NSUbiquitousKeyValueStore.default
         store.synchronize()
-        
-        if let data = NSUbiquitousKeyValueStore.default.data(forKey: "UserDataRoutines") {
-            if let decoded = try? JSONDecoder().decode([Routine].self, from: data){
-                DispatchQueue.main.async {
-                    self.routines = decoded
-                }
+
+        if let data = store.data(forKey: "UserDataRoutines"),
+           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
+            
+            DispatchQueue.main.async {
+                print("🔄 Updating routines from iCloud")
+                self.routines = decoded
+//                if self.routines != decoded { // ✅ Prevents unnecessary UI updates
+//                    print("🔄 Updating routines from iCloud")
+//                    self.routines = decoded
+//                } else {
+//                    print("✅ No changes in iCloud data, skipping update")
+//                }
             }
-        }
-        else {
+        } else {
             print("No data found in iCloud.")
         }
     }
-    
-    // Gets user data JSON
+
+    // ✅ Gets user data JSON
     static func getUserDataJson(completion: @escaping (Data?) -> Void) {
         let store = NSUbiquitousKeyValueStore.default
         if let data = store.data(forKey: "UserDataRoutines") {
@@ -150,37 +151,34 @@ class UserData: ObservableObject, Codable {
         }
     }
 
+    // ✅ Observes app lifecycle to refresh data when app regains focus
     func observeAppLifecycle() {
         #if os(iOS)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidBecomeActive),
-            name: UIApplication.didBecomeActiveNotification,
+            name: UIApplication.didBecomeActiveNotification, // ✅ Detects foregrounding on iOS
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: UIScene.willEnterForegroundNotification, // ✅ Detects foregrounding in iOS 13+
             object: nil
         )
         #elseif os(watchOS)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidBecomeActive),
-            name: WKApplication.didBecomeActiveNotification,
+            name: WKApplication.didBecomeActiveNotification, // ✅ Detects foregrounding on Apple Watch
             object: nil
         )
         #endif
     }
-    
+
     @objc private func handleAppDidBecomeActive() {
-        print("🔄 App became active. Fetching latest data from iCloud.")
-        loadFromCloud()
+        print("🔄 App regained focus. Fetching latest data from iCloud.")
+        loadFromCloud() // ✅ Reload data when the app comes back into focus
     }
-    
-//    //  gets user data json
-//    static func getUserDataJson(completion: @escaping (Data?) -> Void) {
-//        if let data = UserDefaults.standard.data(forKey: "UserDataFirstAttempt"){
-//            completion(data)
-//        }
-//        else{
-//            completion(nil)
-//        }
-//    }
-    
 }
