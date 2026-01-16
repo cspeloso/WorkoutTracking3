@@ -8,26 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
-//    @EnvironmentObject var userData: UserData  // No @StateObject here
-
     var body: some View {
         TabView {
-            RoutineView()
-                .tabItem {
-                    Image(systemName: "list.bullet.circle.fill")
-                    Text("Routines")
-                }
-            ExerciseView()
-                .tabItem {
-                    Image(systemName: "figure.walk.circle.fill")
-                    Text("Exercises")
-                }
-            SettingsView()
-                .tabItem {
-                    Image(systemName: "info.circle.fill")
-                    Text("Info")
-                }
-                .environmentObject(UserData.shared)
+            NavigationView { RoutineView() }
+                .tabItem { Label("Routines", systemImage: "list.bullet.circle.fill") }
+
+            NavigationView { ExerciseView() }
+                .tabItem { Label("Exercises", systemImage: "figure.walk.circle.fill") }
+
+            NavigationView { SettingsView() }
+                .tabItem { Label("Info", systemImage: "info.circle.fill") }
         }
+        .environmentObject(UserData.shared)
     }
 }
