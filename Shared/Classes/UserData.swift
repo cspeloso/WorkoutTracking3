@@ -1,4 +1,6 @@
 import Foundation
+import Combine
+import WatchConnectivity
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -7,11 +9,15 @@ import UIKit
 import WatchKit
 #endif
 
-class UserData: ObservableObject, Codable {
-    // ✅ Singleton instance
+final class UserData: NSObject, ObservableObject, Codable {
     static let shared = UserData()
 
+    private static let routinesCloudKey = "UserDataRoutines"
+    private static let legacyLocalKey = "UserDataFirstAttempt"
+    private static let watchConnectivityRoutinesKey = "routinesData"
+
     private var saveTask: DispatchWorkItem?
+    private var isApplyingRemoteUpdate = false
 
     enum CodingKeys: CodingKey {
         case routines
@@ -19,43 +25,40 @@ class UserData: ObservableObject, Codable {
 
     @Published var routines: [Routine] {
         didSet {
-            if oldValue != routines { // ✅ Only save if there's an actual change
-                saveToCloud()
+            if oldValue != routines && !isApplyingRemoteUpdate {
+                save()
             }
         }
     }
 
-    // ✅ Private initializer (prevents multiple instances)
-    private init() {
-        print("🔄 UserData SINGLETON INIT at \(Date())")
-
+    private override init() {
         self.routines = []
+        super.init()
 
-        let store = NSUbiquitousKeyValueStore.default
-        store.synchronize()
+        print("UserData singleton init at \(Date())")
 
-        if let data = store.data(forKey: "UserDataRoutines"),
-           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
-            print("📡 iCloud USER DATA LOCATED \(data)")
+        configureWatchConnectivity()
+
+        if let decoded = Self.loadFromCloud() {
             self.routines = decoded
-        } else if let localData = UserDefaults.standard.data(forKey: "UserDataFirstAttempt"),
-                  let decoded = try? JSONDecoder().decode([Routine].self, from: localData) {
-            print("💾 LOCAL USER DATA LOCATED")
+            print("Loaded user data from iCloud")
+        } else if let decoded = Self.loadFromLocalDefaults() {
             self.routines = decoded
-            saveToCloud()
-            UserDefaults.standard.removeObject(forKey: "UserDataFirstAttempt")
+            print("Migrated local user data to shared storage")
+            save()
+            UserDefaults.standard.removeObject(forKey: Self.legacyLocalKey)
         } else {
-            print("❌ No user data found locally or in the cloud.")
+            print("No user data found locally or in iCloud")
         }
 
         observeCloudChanges()
-        observeAppLifecycle() // ✅ Added foreground detection
+        observeAppLifecycle()
     }
 
-    // ✅ Ensure decoding still works with singleton
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.routines = try container.decode([Routine].self, forKey: .routines)
+        super.init()
     }
 
     func encode(to encoder: Encoder) throws {
@@ -63,122 +66,249 @@ class UserData: ObservableObject, Codable {
         try container.encode(routines, forKey: .routines)
     }
 
-    // ✅ Optimized `saveToCloud()` with iCloud sync
+    func save() {
+        saveToCloud()
+        sendToPairedDevice()
+    }
+
     func saveToCloud() {
-        saveTask?.cancel() // Cancel any previous save attempt
+        saveTask?.cancel()
 
         let task = DispatchWorkItem {
             do {
                 let encoded = try JSONEncoder().encode(self.routines)
                 let store = NSUbiquitousKeyValueStore.default
-                store.set(encoded, forKey: "UserDataRoutines")
-                
-                // ✅ Force immediate sync to iCloud
+                store.set(encoded, forKey: Self.routinesCloudKey)
                 store.synchronize()
+                UserDefaults.standard.set(encoded, forKey: Self.legacyLocalKey)
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    if let data = store.data(forKey: "UserDataRoutines") {
-                        if let jsonObject = try? JSONSerialization.jsonObject(with: data),
-                           let jsonString = String(data: try! JSONSerialization.data(withJSONObject: jsonObject), encoding: .utf8) {
-                            print("📡 SAVED TO ICLOUD:\n\(jsonString)")
-                        } else {
-                            print("📡 SAVED TO ICLOUD, but could not decode JSON. Data size: \(data.count) bytes")
-                        }
+                    if let data = store.data(forKey: Self.routinesCloudKey) {
+                        print("Saved user data to iCloud. Data size: \(data.count) bytes")
                     } else {
-                        print("⚠️ iCloud did not save data.")
+                        print("iCloud did not return saved user data")
                     }
                 }
             } catch {
-                print("❌ Failed to encode routines: \(error.localizedDescription)")
+                print("Failed to encode routines: \(error.localizedDescription)")
             }
         }
 
         saveTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: task) // ✅ Debounced iCloud saving
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: task)
     }
 
-    func isWatchApp() -> Bool {
-        #if os(watchOS)
-        return true
-        #else
-        return false
-        #endif
-    }
-
-    // ✅ Ensure Apple Watch & iOS listen for updates
     func observeCloudChanges() {
         NotificationCenter.default.addObserver(
             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
             object: nil,
             queue: .main
         ) { _ in
-            print("🌩️ iCloud data changed, updating routines")
+            print("iCloud user data changed")
             self.loadFromCloud()
         }
     }
 
-    // ✅ Prevents unnecessary iCloud reloads
     private func loadFromCloud() {
-
-        let store = NSUbiquitousKeyValueStore.default
-        store.synchronize()
-
-        if let data = store.data(forKey: "UserDataRoutines"),
-           let decoded = try? JSONDecoder().decode([Routine].self, from: data) {
-            
-            DispatchQueue.main.async {
-                print("🔄 Updating routines from iCloud")
-                self.routines = decoded
-//                if self.routines != decoded { // ✅ Prevents unnecessary UI updates
-//                    print("🔄 Updating routines from iCloud")
-//                    self.routines = decoded
-//                } else {
-//                    print("✅ No changes in iCloud data, skipping update")
-//                }
-            }
+        if let decoded = Self.loadFromCloud() {
+            applyRemoteRoutines(decoded, source: "iCloud")
         } else {
             print("No data found in iCloud.")
         }
     }
 
-    // ✅ Gets user data JSON
     static func getUserDataJson(completion: @escaping (Data?) -> Void) {
         let store = NSUbiquitousKeyValueStore.default
-        if let data = store.data(forKey: "UserDataRoutines") {
+        store.synchronize()
+
+        if let data = store.data(forKey: routinesCloudKey) {
+            completion(data)
+        } else if let data = UserDefaults.standard.data(forKey: legacyLocalKey) {
             completion(data)
         } else {
             completion(nil)
         }
     }
 
-    // ✅ Observes app lifecycle to refresh data when app regains focus
     func observeAppLifecycle() {
         #if os(iOS)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidBecomeActive),
-            name: UIApplication.didBecomeActiveNotification, // ✅ Detects foregrounding on iOS
+            name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
 
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidBecomeActive),
-            name: UIScene.willEnterForegroundNotification, // ✅ Detects foregrounding in iOS 13+
+            name: UIScene.willEnterForegroundNotification,
             object: nil
         )
         #elseif os(watchOS)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidBecomeActive),
-            name: WKApplication.didBecomeActiveNotification, // ✅ Detects foregrounding on Apple Watch
+            name: WKApplication.didBecomeActiveNotification,
             object: nil
         )
         #endif
     }
 
     @objc private func handleAppDidBecomeActive() {
-        print("🔄 App regained focus. Fetching latest data from iCloud.")
-        loadFromCloud() // ✅ Reload data when the app comes back into focus
+        print("App became active. Fetching latest shared user data.")
+        loadFromCloud()
+        requestPairedDeviceSync()
+    }
+
+    private static func loadFromCloud() -> [Routine]? {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        guard let data = store.data(forKey: routinesCloudKey) else {
+            return nil
+        }
+
+        return try? JSONDecoder().decode([Routine].self, from: data)
+    }
+
+    private static func loadFromLocalDefaults() -> [Routine]? {
+        guard let data = UserDefaults.standard.data(forKey: legacyLocalKey) else {
+            return nil
+        }
+
+        return try? JSONDecoder().decode([Routine].self, from: data)
+    }
+
+    private func applyRemoteRoutines(_ remoteRoutines: [Routine], source: String) {
+        DispatchQueue.main.async {
+            guard self.routines != remoteRoutines else {
+                print("Shared user data from \(source) already matches local data")
+                return
+            }
+
+            print("Updating routines from \(source)")
+            self.isApplyingRemoteUpdate = true
+            self.routines = remoteRoutines
+            self.isApplyingRemoteUpdate = false
+            self.saveToCloud()
+        }
     }
 }
+
+// MARK: - WatchConnectivity
+
+extension UserData: WCSessionDelegate {
+    private var session: WCSession? {
+        WCSession.isSupported() ? WCSession.default : nil
+    }
+
+    private func configureWatchConnectivity() {
+        guard let session else {
+            return
+        }
+
+        session.delegate = self
+        session.activate()
+    }
+
+    private func sendToPairedDevice() {
+        guard let session else {
+            return
+        }
+
+        do {
+            let encoded = try JSONEncoder().encode(routines)
+            let payload = [Self.watchConnectivityRoutinesKey: encoded]
+
+            if session.activationState == .activated {
+                try? session.updateApplicationContext(payload)
+
+                if session.isReachable {
+                    session.sendMessage(payload, replyHandler: nil) { error in
+                        print("Could not send live user data update: \(error.localizedDescription)")
+                    }
+                } else {
+                    session.transferUserInfo(payload)
+                }
+            }
+        } catch {
+            print("Failed to encode routines for WatchConnectivity: \(error.localizedDescription)")
+        }
+    }
+
+    private func requestPairedDeviceSync() {
+        guard let session, session.activationState == .activated, session.isReachable else {
+            return
+        }
+
+        session.sendMessage(["requestUserDataSync": true]) { [weak self] response in
+            self?.handleWatchConnectivityPayload(response, source: "paired device response")
+        } errorHandler: { error in
+            print("Could not request paired device sync: \(error.localizedDescription)")
+        }
+    }
+
+    private func handleWatchConnectivityPayload(_ payload: [String: Any], source: String) {
+        if payload["requestUserDataSync"] as? Bool == true {
+            sendToPairedDevice()
+            return
+        }
+
+        guard let data = payload[Self.watchConnectivityRoutinesKey] as? Data,
+              let decoded = try? JSONDecoder().decode([Routine].self, from: data) else {
+            return
+        }
+
+        applyRemoteRoutines(decoded, source: source)
+    }
+
+    func session(
+        _ session: WCSession,
+        activationDidCompleteWith activationState: WCSessionActivationState,
+        error: Error?
+    ) {
+        if let error {
+            print("WatchConnectivity activation failed: \(error.localizedDescription)")
+            return
+        }
+
+        print("WatchConnectivity activated: \(activationState.rawValue)")
+        sendToPairedDevice()
+    }
+
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        handleWatchConnectivityPayload(applicationContext, source: "paired device application context")
+    }
+
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        handleWatchConnectivityPayload(message, source: "paired device message")
+    }
+
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        if message["requestUserDataSync"] as? Bool == true,
+           let encoded = try? JSONEncoder().encode(routines) {
+            replyHandler([Self.watchConnectivityRoutinesKey: encoded])
+            return
+        }
+
+        handleWatchConnectivityPayload(message, source: "paired device message")
+        replyHandler([:])
+    }
+
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        handleWatchConnectivityPayload(userInfo, source: "paired device background transfer")
+    }
+}
+
+#if os(iOS)
+extension UserData {
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        print("WatchConnectivity session became inactive")
+    }
+
+    func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
+    }
+}
+#endif

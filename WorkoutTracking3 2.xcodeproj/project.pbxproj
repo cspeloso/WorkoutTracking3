@@ -235,7 +235,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 830B573527D9B53C003A067E /* Build configuration list for PBXProject "WorkoutTracking3" */;
+			buildConfigurationList = 830B573527D9B53C003A067E /* Build configuration list for PBXProject "WorkoutTracking3 2" */;
 			compatibilityVersion = "Xcode 13.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -425,7 +425,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracking3/Preview Content\"";
-				DEVELOPMENT_TEAM = CRMD47KJ6G;
+				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -454,7 +454,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WorkoutTracking3/Preview Content\"";
-				DEVELOPMENT_TEAM = CRMD47KJ6G;
+				DEVELOPMENT_TEAM = 7XUBHHGFL9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -478,7 +478,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		830B573527D9B53C003A067E /* Build configuration list for PBXProject "WorkoutTracking3" */ = {
+		830B573527D9B53C003A067E /* Build configuration list for PBXProject "WorkoutTracking3 2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				830B574627D9B53D003A067E /* Debug */,
