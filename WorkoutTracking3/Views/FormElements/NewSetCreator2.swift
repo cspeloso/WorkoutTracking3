@@ -15,6 +15,7 @@ private enum SetInputField {
 struct NewSetCreator2: View {
     
     @Binding var sets: [Workout.Set]
+    var onAddSet: (@MainActor (Workout.Set) -> Void)?
     
     @State private var weight: Double
     @State private var reps: Int
@@ -28,10 +29,16 @@ struct NewSetCreator2: View {
         return formatter
     }()
     
-    init(sets: Binding<[Workout.Set]>, initialReps: Int = 10, initialWeight: Double = 0.0) {
+    init(
+        sets: Binding<[Workout.Set]>,
+        initialReps: Int = 10,
+        initialWeight: Double = 0.0,
+        onAddSet: (@MainActor (Workout.Set) -> Void)? = nil
+    ) {
         self._sets = sets
         self._reps = State(initialValue: initialReps)
         self._weight = State(initialValue: initialWeight)
+        self.onAddSet = onAddSet
     }
     
     var body: some View {
@@ -90,8 +97,14 @@ struct NewSetCreator2: View {
         .padding(.vertical, 8)
     }
     
+    @MainActor
     private func addSet() {
-        sets.append(Workout.Set(reps: reps, weight: weight))
+        let newSet = Workout.Set(reps: reps, weight: weight)
+        if let onAddSet {
+            onAddSet(newSet)
+        } else {
+            sets = sets + [newSet]
+        }
         focusedField = nil
         
         let haptic = UIImpactFeedbackGenerator(style: .heavy)

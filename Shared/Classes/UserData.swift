@@ -43,7 +43,7 @@ final class UserData: NSObject, ObservableObject, Codable {
 
         configureWatchConnectivity()
 
-        if let stored = Self.loadFromCloud() {
+        if let stored = Self.loadBestStoredRoutines() {
             self.lastUpdatedAt = stored.updatedAt
             self.isApplyingRemoteUpdate = true
             self.routines = stored.routines
@@ -215,9 +215,7 @@ final class UserData: NSObject, ObservableObject, Codable {
             return nil
         }
 
-        let cloudUpdatedAt = store.double(forKey: routinesUpdatedAtKey)
-        let localUpdatedAt = UserDefaults.standard.double(forKey: routinesUpdatedAtKey)
-        let updatedAt = max(cloudUpdatedAt, localUpdatedAt)
+        let updatedAt = store.double(forKey: routinesUpdatedAtKey)
         return StoredRoutines(
             routines: routines,
             updatedAt: updatedAt,
@@ -240,6 +238,22 @@ final class UserData: NSObject, ObservableObject, Codable {
             updatedAt: updatedAt,
             shouldPromoteTimestamp: updatedAt <= 0 && !routines.isEmpty
         )
+    }
+
+    private static func loadBestStoredRoutines() -> StoredRoutines? {
+        let cloudStored = loadFromCloud()
+        let localStored = loadFromLocalDefaults()
+
+        switch (cloudStored, localStored) {
+        case let (cloud?, local?):
+            return local.updatedAt > cloud.updatedAt ? local : cloud
+        case let (cloud?, nil):
+            return cloud
+        case let (nil, local?):
+            return local
+        case (nil, nil):
+            return nil
+        }
     }
 
     private func applyRemoteRoutines(

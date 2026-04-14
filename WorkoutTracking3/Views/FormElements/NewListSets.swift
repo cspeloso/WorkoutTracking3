@@ -12,21 +12,18 @@ struct NewListSets: View {
     @Binding var sets: [Workout.Set]
     
     var body: some View {
-        if sets.count == 0 {
+        if sets.isEmpty {
             Text("No sets recorded.")
-        }
-        else {
-            List {
-                ForEach(sets) { s in
-                    HStack {
-                        Text("\(s.reps) reps")
-                            .padding(.horizontal, 10)
-                        Spacer()
-                        Text("\(s.weight.formatted()) lbs")
-                    }
+        } else {
+            ForEach(sets) { s in
+                HStack {
+                    Text("\(s.reps) reps")
+                        .padding(.horizontal, 10)
+                    Spacer()
+                    Text("\(s.weight.formatted()) lbs")
                 }
-                .onDelete(perform: deleteSet)
             }
+            .onDelete(perform: deleteSet)
         }
     }
     

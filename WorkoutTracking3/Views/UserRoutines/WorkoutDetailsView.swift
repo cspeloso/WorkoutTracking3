@@ -12,11 +12,16 @@ struct WorkoutDetailsView: View {
     @Binding var workout: Workout
     @State private var showAlert = false
     @State private var navigateToHistory = false
+    @State private var visibleSets: [Workout.Set] = []
 
     // Load exercise metadata once
     private let exercises: [Exercise] = Bundle.main.decode("exercises.json")
     
     private var suggestedSet: Workout.Set {
+        if let currentSet = visibleSets.last {
+            return currentSet
+        }
+
         if let currentSet = workout.sets.last {
             return currentSet
         }
@@ -47,7 +52,8 @@ struct WorkoutDetailsView: View {
                     NewSetCreator2(
                         sets: $workout.sets,
                         initialReps: suggestedSet.reps,
-                        initialWeight: suggestedSet.weight
+                        initialWeight: suggestedSet.weight,
+                        onAddSet: addSet
                     )
                 } header: {
                     Text("Add new sets")
@@ -55,7 +61,7 @@ struct WorkoutDetailsView: View {
 
                 // Sets list
                 Section {
-                    NewListSets(sets: $workout.sets)
+                    NewListSets(sets: visibleSetsBinding)
                 } header: {
                     Text("Set started: \(workout.getStartDateStr())")
                 }
@@ -129,19 +135,45 @@ struct WorkoutDetailsView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .onAppear {
+            visibleSets = workout.sets
+        }
+        .onChange(of: workout.sets) { newSets in
+            if visibleSets != newSets {
+                visibleSets = newSets
+            }
+        }
+    }
+
+    private var visibleSetsBinding: Binding<[Workout.Set]> {
+        Binding(
+            get: { visibleSets },
+            set: { newSets in
+                visibleSets = newSets
+                workout.sets = newSets
+            }
+        )
     }
 
     // Ensure UI-driving mutations happen on the main actor
     @MainActor
+    private func addSet(_ set: Workout.Set) {
+        let updatedSets = visibleSets + [set]
+        visibleSets = updatedSets
+        workout.sets = updatedSets
+    }
+
+    @MainActor
     private func logCurrentSet() {
-        guard !workout.sets.isEmpty else {
+        guard !visibleSets.isEmpty else {
             showAlert = true
             return
         }
 
         workout.startDate = Date()
-        let newLoggedSet = Workout.LoggedSet(sets: workout.sets, loggedOnDate: workout.startDate)
-        workout.loggedSets.append(newLoggedSet)
-        workout.sets.removeAll()
+        let newLoggedSet = Workout.LoggedSet(sets: visibleSets, loggedOnDate: workout.startDate)
+        workout.loggedSets = workout.loggedSets + [newLoggedSet]
+        workout.sets = []
+        visibleSets = []
     }
 }

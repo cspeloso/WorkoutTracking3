@@ -67,13 +67,6 @@ struct WorkoutDetailsView: View {
                         .foregroundColor(.primary)
                 }
                 .buttonStyle(.plain)
-                .background(
-                    NavigationLink(
-                        destination: LoggedSetsView(workout: $workout),
-                        isActive: $navigateToHistory
-                    ) { EmptyView() }
-                    .hidden()
-                )
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 5)
@@ -92,6 +85,9 @@ struct WorkoutDetailsView: View {
         }
         .navigationBarTitle(workout.name)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $navigateToHistory) {
+            LoggedSetsView(workout: $workout)
+        }
         .alert(isPresented: $showAlert) {
             Alert(
                 title: Text("Error"),

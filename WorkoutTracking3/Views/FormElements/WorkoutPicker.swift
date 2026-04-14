@@ -24,7 +24,7 @@ struct WorkoutPickerListView: View {
                 HStack{
                     TextField("Exercise Name", text: $workoutName)
                         .onChange(of: workoutName) { newValue in
-                            if(newValue.count > 50){
+                            if newValue.count > 50 {
                                 workoutName = String(newValue.prefix(50))
                             }
                         }

@@ -64,7 +64,7 @@ struct SettingsView: View {
                                 do {
                                     try data.write(to: fileUrl)
                                     let activityViewController = UIActivityViewController(activityItems: [fileUrl], applicationActivities: nil)
-                                    UIApplication.shared.windows.first?.rootViewController?.present(activityViewController, animated: true, completion: nil)
+                                    present(activityViewController)
                                 } catch {
                                     print("Error saving data to file: \(error)")
                                 }
@@ -138,6 +138,28 @@ struct SettingsView: View {
                 importError = "Error: Failed to import file."
             }
         }
+    }
+    
+    private func present(_ viewController: UIViewController) {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+              let rootViewController = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+            return
+        }
+        
+        if let popoverController = viewController.popoverPresentationController {
+            popoverController.sourceView = rootViewController.view
+            popoverController.sourceRect = CGRect(
+                x: rootViewController.view.bounds.midX,
+                y: rootViewController.view.bounds.midY,
+                width: 0,
+                height: 0
+            )
+            popoverController.permittedArrowDirections = []
+        }
+        
+        rootViewController.present(viewController, animated: true)
     }
 }
 

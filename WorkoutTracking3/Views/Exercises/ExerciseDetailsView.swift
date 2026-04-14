@@ -11,6 +11,13 @@ struct ExerciseDetailsView: View {
     
     var exercise: Exercise
     
+    private var instructionSteps: [String] {
+        exercise.description
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: ["\n", "\t"]) }
+            .filter { !$0.isEmpty }
+    }
+    
     var body: some View {
         
         //  Image viewer
@@ -43,12 +50,10 @@ struct ExerciseDetailsView: View {
                 
                 Divider()
                 
-                if exercise.description.trimmingCharacters(in: ["\n","\t"]) != "" {
+                if !instructionSteps.isEmpty {
                     VStack (alignment: .leading) {
-                        ForEach(0..<exercise.description.components(separatedBy: "\n").count) { i in
-                            let str = exercise.description.components(separatedBy: "\n")[i].trimmingCharacters(in: ["\n", "\t"])
-                            
-                            Text("**\(i+1).** \(str)")
+                        ForEach(Array(instructionSteps.enumerated()), id: \.offset) { index, step in
+                            Text("**\(index + 1).** \(step)")
                                 .padding(.bottom,15)
                         }
                     }

@@ -38,7 +38,7 @@ struct NewSetCreator2: View {
             
             HStack(spacing: 8) {
                 Button {
-                    sets.append(Workout.Set(reps: reps, weight: weight))
+                    sets = sets + [Workout.Set(reps: reps, weight: weight)]
                     WKInterfaceDevice.current().play(.success)
                 } label: {
                     Text("Add Set")

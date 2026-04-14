@@ -32,7 +32,7 @@ struct AddWorkoutView: View {
         Form {
             Section {
                 HStack {
-                    TextField("Exercise name", text: $customExerciseName)
+                        TextField("Exercise name", text: $customExerciseName)
                         .onChange(of: customExerciseName) { newValue in
                             if newValue.count > 50 {
                                 customExerciseName = String(newValue.prefix(50))
