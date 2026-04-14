@@ -15,6 +15,18 @@ struct WorkoutDetailsView: View {
 
     // Load exercise metadata once
     private let exercises: [Exercise] = Bundle.main.decode("exercises.json")
+    
+    private var suggestedSet: Workout.Set {
+        if let currentSet = workout.sets.last {
+            return currentSet
+        }
+        
+        if let recentSet = workout.getMostRecentLoggedSet()?.sets.last {
+            return recentSet
+        }
+        
+        return Workout.Set(reps: 10, weight: 0)
+    }
 
     var body: some View {
         VStack {
@@ -32,7 +44,11 @@ struct WorkoutDetailsView: View {
 
                 // Add new set
                 Section {
-                    NewSetCreator2(sets: $workout.sets)
+                    NewSetCreator2(
+                        sets: $workout.sets,
+                        initialReps: suggestedSet.reps,
+                        initialWeight: suggestedSet.weight
+                    )
                 } header: {
                     Text("Add new sets")
                 }

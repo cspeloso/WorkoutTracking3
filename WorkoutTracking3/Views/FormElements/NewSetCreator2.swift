@@ -16,8 +16,8 @@ struct NewSetCreator2: View {
     
     @Binding var sets: [Workout.Set]
     
-    @State private var weight: Double = 0.0
-    @State private var reps: Int = 0
+    @State private var weight: Double
+    @State private var reps: Int
     
     @FocusState private var focusedField: SetInputField?
     
@@ -27,6 +27,12 @@ struct NewSetCreator2: View {
         formatter.maximumFractionDigits = 1
         return formatter
     }()
+    
+    init(sets: Binding<[Workout.Set]>, initialReps: Int = 10, initialWeight: Double = 0.0) {
+        self._sets = sets
+        self._reps = State(initialValue: initialReps)
+        self._weight = State(initialValue: initialWeight)
+    }
     
     var body: some View {
         VStack(spacing: 16) {

@@ -19,16 +19,44 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading) {
-                Text("This app is designed to help you monitor your workouts. \n\nIt lets you create **routines**, which are comprised of one or several workouts. You can set the day of the week that routine falls on, and you can name it as well. If you don't name the routine, it will show the day of the week selected by default. \n\n**Workouts** are comprised of an exercise, as well as one or several sets. Once created, you can add new sets and log old sets by clicking the \"new log\" button. You can view old sets by clicking the \"History\" button. \n\n**Sets** track the weight used, and the number of reps performed.")
-                    .padding(.horizontal, 20)
+            Form {
+                Section {
+                    Text("Work It Out helps you start logging quickly and keep your routines organized.")
+                } header: {
+                    Text("Overview")
+                }
                 
-                Spacer()
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Tap **Start Workout** to open your **Quick Workout** routine.")
+                        Text("Use **Add Workout** to choose an exercise. The workout is saved as soon as you pick it.")
+                        Text("Open a workout to add sets, log progress, and review history.")
+                    }
+                } header: {
+                    Text("Fast Start")
+                }
                 
-                HStack {
-                    Spacer()
-                    
-                    // Button to download user data
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("**Routine**: a collection of workouts, usually for a day.")
+                        Text("**Workout**: one exercise inside a routine.")
+                        Text("**Set**: reps and weight.")
+                        Text("**History**: previously logged sets for a workout.")
+                    }
+                } header: {
+                    Text("Terms")
+                }
+                
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Routines sync between iPhone and Apple Watch.")
+                        Text("Edits to workouts, sets, and history are saved automatically.")
+                    }
+                } header: {
+                    Text("Sync")
+                }
+                
+                Section {
                     Button(action: {
                         UserData.getUserDataJson { data in
                             if let data = data {
@@ -45,45 +73,27 @@ struct SettingsView: View {
                             }
                         }
                     }) {
-                        Text("Click here to download your data")
-                            .foregroundColor(Color.gray)
-                            .frame(alignment: .center)
-                            .font(.callout)
+                        Text("Download your data")
                     }
-                    
-                    Spacer()
-                }
-                .padding(.bottom, 10)
-                
-                // Button to upload JSON file
-                HStack {
-                    Spacer()
                     
                     Button(action: {
                         isFileImporterPresented.toggle()
                     }) {
                         Text("Upload JSON to overwrite routines")
-                            .foregroundColor(Color.blue)
-                            .frame(alignment: .center)
-                            .font(.callout)
                     }
-                    
-                    Spacer()
+                } header: {
+                    Text("Data")
                 }
-                .padding(.bottom, 20)
-                
+                                
                 if let importError = importError {
                     Text(importError)
                         .foregroundColor(.red)
                         .font(.footnote)
-                        .padding()
                 }
             }
             .navigationTitle("Settings")
         }
         .navigationViewStyle(.stack)
-        .background(.blue)
-        .ignoresSafeArea(.all)
         .fileImporter(
             isPresented: $isFileImporterPresented,
             allowedContentTypes: [UTType.json],
