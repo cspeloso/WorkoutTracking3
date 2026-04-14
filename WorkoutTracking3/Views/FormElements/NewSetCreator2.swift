@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+private enum SetInputField {
+    case weight
+    case reps
+}
+
 struct NewSetCreator2: View {
     
     @Binding var sets: [Workout.Set]
@@ -14,85 +19,150 @@ struct NewSetCreator2: View {
     @State private var weight: Double = 0.0
     @State private var reps: Int = 0
     
-    @FocusState var isWeightInputActive: Bool
+    @FocusState private var focusedField: SetInputField?
     
-    let decimalFormatter: NumberFormatter = {
+    private let decimalFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 1
         return formatter
     }()
     
     var body: some View {
-        VStack {
-            
-            //  top labels
-            HStack {
-                Text("Weight")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 15)
-                Spacer()
-                Text("Reps")
-                    .frame(maxWidth:.infinity, alignment: .center)
-                    .padding(.top, 15)
+        VStack(spacing: 16) {
+            HStack(spacing: 12) {
+                SetInputCard(
+                    title: "Weight",
+                    value: $weight,
+                    formatter: decimalFormatter,
+                    unit: "lb",
+                    keyboardType: .decimalPad,
+                    focusedField: $focusedField,
+                    field: .weight,
+                    decrement: { weight = max(0, weight - 5) },
+                    increment: { weight += 5 }
+                )
+                
+                SetInputCard(
+                    title: "Reps",
+                    value: Binding(
+                        get: { Double(reps) },
+                        set: { reps = max(0, Int($0.rounded())) }
+                    ),
+                    formatter: decimalFormatter,
+                    unit: "reps",
+                    keyboardType: .numberPad,
+                    focusedField: $focusedField,
+                    field: .reps,
+                    decrement: { reps = max(0, reps - 1) },
+                    increment: { reps += 1 }
+                )
             }
             
-            //  middle text entry
-            HStack {
-                TextField("Weight", value: $weight, formatter: decimalFormatter)
-                    .keyboardType(.decimalPad)
-                    .focused($isWeightInputActive)
-                    .frame(height:75)
-                    .background(Color(red: 227/255, green: 227/255, blue: 227/255))
-                    .cornerRadius(10)
-                    .multilineTextAlignment(.center)
-                    .font(
-                            Font
-                                .system(size: 30)
-                                .bold()
-                    )
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Spacer()
-                            Button("Done"){
-                                isWeightInputActive = false
-                            }
-                        }
+            Button {
+                addSet()
+            } label: {
+                Text("Add Set")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(Color(red: 221/255, green: 69/255, blue: 36/255))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        focusedField = nil
                     }
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private func addSet() {
+        sets.append(Workout.Set(reps: reps, weight: weight))
+        focusedField = nil
+        
+        let haptic = UIImpactFeedbackGenerator(style: .heavy)
+        haptic.impactOccurred()
+    }
+}
+
+private struct SetInputCard: View {
+    
+    let title: String
+    @Binding var value: Double
+    let formatter: NumberFormatter
+    let unit: String
+    let keyboardType: UIKeyboardType
+    let focusedField: FocusState<SetInputField?>.Binding
+    let field: SetInputField
+    let decrement: () -> Void
+    let increment: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                TextField("Reps", value: $reps, formatter: decimalFormatter)
-                    .keyboardType(.numberPad)
-                    .focused($isWeightInputActive)
-                    .frame(height: 75)
-                    .background(Color(red: 227/255, green: 227/255, blue: 227/255))
-                    .cornerRadius(10)
-                    .multilineTextAlignment(.center)
-                    .font(
-                            Font
-                                .system(size: 30)
-                                .bold()
-                    )
-                
+                Text(unit)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+            }
+            
+            TextField(title, value: $value, formatter: formatter)
+                .keyboardType(keyboardType)
+                .focused(focusedField, equals: field)
+                .multilineTextAlignment(.center)
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .frame(height: 70)
+                .frame(maxWidth: .infinity)
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(focusedField.wrappedValue == field ? Color(red: 221/255, green: 69/255, blue: 36/255) : Color.clear, lineWidth: 2)
+                )
+            
+            HStack(spacing: 8) {
+                StepButton(systemImage: "minus", action: decrement)
+                StepButton(systemImage: "plus", action: increment)
             }
         }
-        
-        //  bottom add set button
-        Button("Add Set"){
-            let newSet = Workout.Set(reps: reps, weight: weight)
-            sets.append(newSet)
-            
-            let haptic = UIImpactFeedbackGenerator(style: .heavy)
-            haptic.impactOccurred()
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
+    }
+}
+
+private struct StepButton: View {
+    
+    let systemImage: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .bold))
+                .frame(maxWidth: .infinity)
+                .frame(height: 34)
+                .background(Color(.tertiarySystemGroupedBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
         }
-        .frame(maxWidth: .infinity)
-        .font(
-            Font
-                .system(size: 16)
-                .bold()
-        )
-        .background(Color(red: 221/255, green: 69/255, blue: 36/255))
-        .foregroundColor(.white)
+        .buttonStyle(.plain)
     }
 }
 
