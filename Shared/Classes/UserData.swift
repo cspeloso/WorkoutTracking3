@@ -13,11 +13,14 @@ final class UserData: NSObject, ObservableObject, Codable {
     static let shared = UserData()
 
     private static let routinesCloudKey = "UserDataRoutines"
+    private static let routinesUpdatedAtKey = "UserDataRoutinesUpdatedAt"
     private static let legacyLocalKey = "UserDataFirstAttempt"
     private static let watchConnectivityRoutinesKey = "routinesData"
+    private static let watchConnectivityUpdatedAtKey = "routinesUpdatedAt"
 
     private var saveTask: DispatchWorkItem?
     private var isApplyingRemoteUpdate = false
+    private var lastUpdatedAt: TimeInterval = 0
 
     enum CodingKeys: CodingKey {
         case routines
@@ -26,6 +29,7 @@ final class UserData: NSObject, ObservableObject, Codable {
     @Published var routines: [Routine] {
         didSet {
             if oldValue != routines && !isApplyingRemoteUpdate {
+                lastUpdatedAt = Date().timeIntervalSince1970
                 save()
             }
         }
@@ -39,12 +43,25 @@ final class UserData: NSObject, ObservableObject, Codable {
 
         configureWatchConnectivity()
 
-        if let decoded = Self.loadFromCloud() {
-            self.routines = decoded
+        if let stored = Self.loadFromCloud() {
+            self.lastUpdatedAt = stored.updatedAt
+            self.isApplyingRemoteUpdate = true
+            self.routines = stored.routines
+            self.isApplyingRemoteUpdate = false
             print("Loaded user data from iCloud")
-        } else if let decoded = Self.loadFromLocalDefaults() {
-            self.routines = decoded
+            if stored.shouldPromoteTimestamp {
+                self.lastUpdatedAt = Date().timeIntervalSince1970
+                saveToCloud()
+            }
+        } else if let stored = Self.loadFromLocalDefaults() {
+            self.lastUpdatedAt = stored.updatedAt
+            self.isApplyingRemoteUpdate = true
+            self.routines = stored.routines
+            self.isApplyingRemoteUpdate = false
             print("Migrated local user data to shared storage")
+            if stored.shouldPromoteTimestamp {
+                self.lastUpdatedAt = Date().timeIntervalSince1970
+            }
             save()
             UserDefaults.standard.removeObject(forKey: Self.legacyLocalKey)
         } else {
@@ -67,6 +84,7 @@ final class UserData: NSObject, ObservableObject, Codable {
     }
 
     func save() {
+        saveToLocalDefaults()
         saveToCloud()
         sendToPairedDevice()
     }
@@ -76,11 +94,16 @@ final class UserData: NSObject, ObservableObject, Codable {
 
         let task = DispatchWorkItem {
             do {
+                if self.lastUpdatedAt <= 0 {
+                    self.lastUpdatedAt = Date().timeIntervalSince1970
+                }
+
                 let encoded = try JSONEncoder().encode(self.routines)
                 let store = NSUbiquitousKeyValueStore.default
                 store.set(encoded, forKey: Self.routinesCloudKey)
+                store.set(self.lastUpdatedAt, forKey: Self.routinesUpdatedAtKey)
                 store.synchronize()
-                UserDefaults.standard.set(encoded, forKey: Self.legacyLocalKey)
+                self.saveToLocalDefaults()
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     if let data = store.data(forKey: Self.routinesCloudKey) {
@@ -98,6 +121,20 @@ final class UserData: NSObject, ObservableObject, Codable {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: task)
     }
 
+    private func saveToLocalDefaults() {
+        do {
+            if lastUpdatedAt <= 0 {
+                lastUpdatedAt = Date().timeIntervalSince1970
+            }
+
+            let encoded = try JSONEncoder().encode(routines)
+            UserDefaults.standard.set(encoded, forKey: Self.legacyLocalKey)
+            UserDefaults.standard.set(lastUpdatedAt, forKey: Self.routinesUpdatedAtKey)
+        } catch {
+            print("Failed to encode local routines backup: \(error.localizedDescription)")
+        }
+    }
+
     func observeCloudChanges() {
         NotificationCenter.default.addObserver(
             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
@@ -110,8 +147,13 @@ final class UserData: NSObject, ObservableObject, Codable {
     }
 
     private func loadFromCloud() {
-        if let decoded = Self.loadFromCloud() {
-            applyRemoteRoutines(decoded, source: "iCloud")
+        if let stored = Self.loadFromCloud() {
+            applyRemoteRoutines(
+                stored.routines,
+                updatedAt: stored.updatedAt,
+                source: "iCloud",
+                shouldPromoteTimestamp: stored.shouldPromoteTimestamp
+            )
         } else {
             print("No data found in iCloud.")
         }
@@ -161,7 +203,7 @@ final class UserData: NSObject, ObservableObject, Codable {
         requestPairedDeviceSync()
     }
 
-    private static func loadFromCloud() -> [Routine]? {
+    private static func loadFromCloud() -> StoredRoutines? {
         let store = NSUbiquitousKeyValueStore.default
         store.synchronize()
 
@@ -169,30 +211,90 @@ final class UserData: NSObject, ObservableObject, Codable {
             return nil
         }
 
-        return try? JSONDecoder().decode([Routine].self, from: data)
+        guard let routines = try? JSONDecoder().decode([Routine].self, from: data) else {
+            return nil
+        }
+
+        let cloudUpdatedAt = store.double(forKey: routinesUpdatedAtKey)
+        let localUpdatedAt = UserDefaults.standard.double(forKey: routinesUpdatedAtKey)
+        let updatedAt = max(cloudUpdatedAt, localUpdatedAt)
+        return StoredRoutines(
+            routines: routines,
+            updatedAt: updatedAt,
+            shouldPromoteTimestamp: updatedAt <= 0 && !routines.isEmpty
+        )
     }
 
-    private static func loadFromLocalDefaults() -> [Routine]? {
+    private static func loadFromLocalDefaults() -> StoredRoutines? {
         guard let data = UserDefaults.standard.data(forKey: legacyLocalKey) else {
             return nil
         }
 
-        return try? JSONDecoder().decode([Routine].self, from: data)
+        guard let routines = try? JSONDecoder().decode([Routine].self, from: data) else {
+            return nil
+        }
+
+        let updatedAt = UserDefaults.standard.double(forKey: routinesUpdatedAtKey)
+        return StoredRoutines(
+            routines: routines,
+            updatedAt: updatedAt,
+            shouldPromoteTimestamp: updatedAt <= 0 && !routines.isEmpty
+        )
     }
 
-    private func applyRemoteRoutines(_ remoteRoutines: [Routine], source: String) {
+    private func applyRemoteRoutines(
+        _ remoteRoutines: [Routine],
+        updatedAt remoteUpdatedAt: TimeInterval,
+        source: String,
+        shouldPromoteTimestamp: Bool = false
+    ) {
         DispatchQueue.main.async {
+            if !self.shouldApplyRemoteRoutines(remoteRoutines, updatedAt: remoteUpdatedAt, source: source) {
+                return
+            }
+
             guard self.routines != remoteRoutines else {
+                if remoteUpdatedAt > self.lastUpdatedAt {
+                    self.lastUpdatedAt = remoteUpdatedAt
+                    UserDefaults.standard.set(remoteUpdatedAt, forKey: Self.routinesUpdatedAtKey)
+                }
                 print("Shared user data from \(source) already matches local data")
                 return
             }
 
             print("Updating routines from \(source)")
+            self.lastUpdatedAt = shouldPromoteTimestamp || remoteUpdatedAt <= 0
+                ? Date().timeIntervalSince1970
+                : remoteUpdatedAt
             self.isApplyingRemoteUpdate = true
             self.routines = remoteRoutines
             self.isApplyingRemoteUpdate = false
             self.saveToCloud()
         }
+    }
+
+    private func shouldApplyRemoteRoutines(
+        _ remoteRoutines: [Routine],
+        updatedAt remoteUpdatedAt: TimeInterval,
+        source: String
+    ) -> Bool {
+        if remoteUpdatedAt > 0 && lastUpdatedAt > 0 && remoteUpdatedAt < lastUpdatedAt {
+            print("Ignoring stale shared user data from \(source)")
+            return false
+        }
+
+        if remoteUpdatedAt <= 0 && !routines.isEmpty {
+            print("Ignoring unstamped shared user data from \(source)")
+            return false
+        }
+
+        return true
+    }
+
+    private struct StoredRoutines {
+        let routines: [Routine]
+        let updatedAt: TimeInterval
+        let shouldPromoteTimestamp: Bool
     }
 }
 
@@ -219,7 +321,10 @@ extension UserData: WCSessionDelegate {
 
         do {
             let encoded = try JSONEncoder().encode(routines)
-            let payload = [Self.watchConnectivityRoutinesKey: encoded]
+            let payload: [String: Any] = [
+                Self.watchConnectivityRoutinesKey: encoded,
+                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt
+            ]
 
             if session.activationState == .activated {
                 try? session.updateApplicationContext(payload)
@@ -260,7 +365,8 @@ extension UserData: WCSessionDelegate {
             return
         }
 
-        applyRemoteRoutines(decoded, source: source)
+        let updatedAt = payload[Self.watchConnectivityUpdatedAtKey] as? TimeInterval ?? 0
+        applyRemoteRoutines(decoded, updatedAt: updatedAt, source: source)
     }
 
     func session(
@@ -288,7 +394,10 @@ extension UserData: WCSessionDelegate {
     func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
         if message["requestUserDataSync"] as? Bool == true,
            let encoded = try? JSONEncoder().encode(routines) {
-            replyHandler([Self.watchConnectivityRoutinesKey: encoded])
+            replyHandler([
+                Self.watchConnectivityRoutinesKey: encoded,
+                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt
+            ])
             return
         }
 
