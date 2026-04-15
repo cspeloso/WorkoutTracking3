@@ -10,9 +10,10 @@ import WatchKit
 
 struct NewSetCreator2: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var sets: [Workout.Set]
     
-    @State private var weight: Double = 0.0
+    @State private var displayWeight: Double = 0.0
     @State private var reps: Int = 0
     
     var body: some View {
@@ -20,9 +21,9 @@ struct NewSetCreator2: View {
             VStack(spacing: 8) {
                 SetStepperRow(
                     title: "Weight",
-                    valueText: "\(weight.formatted()) lb",
-                    decrement: { weight = max(0, weight - 5) },
-                    increment: { weight += 5 }
+                    valueText: "\(displayWeight.formatted(.number.precision(.fractionLength(0...1)))) \(userData.weightUnit.abbreviatedTitle)",
+                    decrement: { displayWeight = max(0, displayWeight - userData.weightUnit.largeStep) },
+                    increment: { displayWeight += userData.weightUnit.largeStep }
                 )
                 
                 SetStepperRow(
@@ -38,7 +39,7 @@ struct NewSetCreator2: View {
             
             HStack(spacing: 8) {
                 Button {
-                    sets = sets + [Workout.Set(reps: reps, weight: weight)]
+                    sets = sets + [Workout.Set(reps: reps, weight: userData.weightUnit.storedPounds(fromDisplayWeight: displayWeight))]
                     WKInterfaceDevice.current().play(.success)
                 } label: {
                     Text("Add Set")
@@ -53,7 +54,7 @@ struct NewSetCreator2: View {
                 .cornerRadius(8)
                 
                 Button {
-                    weight = 0
+                    displayWeight = 0
                     reps = 0
                     WKInterfaceDevice.current().play(.click)
                 } label: {

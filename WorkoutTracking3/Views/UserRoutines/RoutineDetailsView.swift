@@ -10,68 +10,117 @@ import SwiftUI
 struct RoutineDetailsView: View {
     
     @Binding var routine: Routine
-    @State private var createdWorkoutIndex: Int?
-    @State private var selectedWorkoutIndex: Int?
+    @State private var createdWorkoutID: Workout.ID?
+    @State private var activeWorkout: Workout?
     @State private var shouldShowAddWorkout = false
-    @State private var shouldOpenCreatedWorkout = false
+    @State private var shouldShowWorkout = false
     
     private let routineWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", ""]
     
     var body: some View {
         ZStack {
-            Form {
-                
-                //  Routine name
+            AppColors.background.ignoresSafeArea()
+
+            List {
+                Section {
+                    HStack(alignment: .top, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(routine.name.isEmpty ? "Routine" : routine.name)
+                                .font(.system(size: 36, weight: .black, design: .rounded))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                            Text(routine.weekday.isEmpty ? "No day" : routine.weekday)
+                                .font(.title3.weight(.black))
+                                .foregroundColor(AppColors.accent)
+                        }
+
+                        Spacer()
+
+                        Button {
+                            shouldShowAddWorkout = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .regular))
+                                .foregroundColor(.white)
+                                .frame(width: 64, height: 64)
+                                .background(AppColors.accent)
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .listRowInsets(EdgeInsets(top: 18, leading: 22, bottom: 8, trailing: 22))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
                 Section {
                     TextField("Routine Name", text: $routine.name)
-                } header: {
-                    Text("Routine Name")
-                }
-                
-                Section {
+                        .font(.headline.weight(.bold))
+                        .padding(16)
+                        .background(AppColors.card)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+                        .cornerRadius(8)
+
                     Picker("Weekday", selection: $routine.weekday) {
                         ForEach(routineWeekdays, id: \.self) { weekday in
-                            if weekday.isEmpty {
-                                Text("No day").tag(weekday)
-                            } else {
-                                Text(weekday).tag(weekday)
-                            }
+                            Text(weekday.isEmpty ? "No day" : weekday).tag(weekday)
                         }
                     }
+                    .pickerStyle(.menu)
+                    .font(.headline.weight(.bold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(AppColors.card)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+                    .cornerRadius(8)
                 } header: {
-                    Text("Weekday")
-                } footer: {
-                    Text("This controls where the routine appears in your weekly list.")
+                    SectionTitle("Routine Details")
                 }
-                
-                //  Workouts List
+                .listRowInsets(EdgeInsets(top: 6, leading: 22, bottom: 6, trailing: 22))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
                 Section {
-                    if routine.workouts.count == 0 {
+                    if routine.workouts.isEmpty {
                         Button {
                             shouldShowAddWorkout = true
                         } label: {
                             EmptyWorkoutsCTA()
                         }
                         .buttonStyle(.plain)
-                    }
-                    else {
-                        ForEach($routine.workouts) { $workout in
-                            NavigationLink(destination: WorkoutDetailsView(workout: $workout)){
-                                Text(workout.name)
+                    } else {
+                        ForEach(routine.workouts.indices, id: \.self) { index in
+                            Button {
+                                activeWorkout = routine.workouts[index]
+                                shouldShowWorkout = true
+                            } label: {
+                                WorkoutCard(workout: routine.workouts[index], index: index + 1)
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    routine.workouts.remove(at: index)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                         }
-                        .onDelete(perform: deleteWorkout)
                         .onMove(perform: moveWorkout)
                     }
                 } header: {
-                    Text("Workouts")
+                    SectionTitle("Workouts")
                 }
+                .listRowInsets(EdgeInsets(top: 7, leading: 22, bottom: 7, trailing: 22))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
+            .listStyle(.plain)
+            .hideScrollContentBackgroundIfAvailable()
             
             NavigationLink(
                 destination: AddWorkoutView(
                     workouts: $routine.workouts,
-                    createdWorkoutIndex: $createdWorkoutIndex
+                    createdWorkoutID: $createdWorkoutID
                 ),
                 isActive: $shouldShowAddWorkout
             ) {
@@ -80,44 +129,40 @@ struct RoutineDetailsView: View {
             .hidden()
             
             NavigationLink(
-                destination: selectedWorkoutDestination(),
-                isActive: $shouldOpenCreatedWorkout
+                destination: activeWorkoutDestination(),
+                isActive: $shouldShowWorkout
             ) {
                 EmptyView()
             }
             .hidden()
         }
-        .navigationTitle(routine.name != "" ? routine.name : routine.weekday)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            Button {
-                shouldShowAddWorkout = true
-            } label: {
-                Text("Add Workout")
-            }
+            EditButton()
         }
-        .onChange(of: createdWorkoutIndex) { newIndex in
-            guard let newIndex else {
+        .onChange(of: createdWorkoutID) { newID in
+            guard let newID else {
                 return
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                guard routine.workouts.indices.contains(newIndex) else {
-                    createdWorkoutIndex = nil
+                guard routine.workouts.contains(where: { $0.id == newID }) else {
+                    createdWorkoutID = nil
                     return
                 }
                 
-                selectedWorkoutIndex = newIndex
-                shouldOpenCreatedWorkout = true
-                createdWorkoutIndex = nil
+                activeWorkout = routine.workouts.first(where: { $0.id == newID })
+                shouldShowWorkout = activeWorkout != nil
+                createdWorkoutID = nil
             }
         }
     }
-    
+
     @ViewBuilder
-    private func selectedWorkoutDestination() -> some View {
-        if let selectedWorkoutIndex,
-           routine.workouts.indices.contains(selectedWorkoutIndex) {
-            WorkoutDetailsView(workout: $routine.workouts[selectedWorkoutIndex])
+    private func activeWorkoutDestination() -> some View {
+        if let activeWorkout {
+            WorkoutDetailsRoute(routine: $routine, workout: activeWorkout)
         } else {
             EmptyView()
         }
@@ -131,6 +176,41 @@ struct RoutineDetailsView: View {
     }
 }
 
+private struct WorkoutDetailsRoute: View {
+    @Binding var routine: Routine
+    let workoutID: Workout.ID
+    @State private var workout: Workout
+
+    init(routine: Binding<Routine>, workout: Workout) {
+        self._routine = routine
+        self.workoutID = workout.id
+        self._workout = State(initialValue: workout)
+    }
+
+    var body: some View {
+        WorkoutDetailsView(workout: $workout)
+            .onChange(of: workout) { updatedWorkout in
+                syncWorkout(updatedWorkout)
+            }
+            .onAppear {
+                if let latestWorkout = routine.workouts.first(where: { $0.id == workoutID }),
+                   latestWorkout != workout {
+                    workout = latestWorkout
+                }
+            }
+    }
+
+    private func syncWorkout(_ updatedWorkout: Workout) {
+        guard let index = routine.workouts.firstIndex(where: { $0.id == workoutID }) else {
+            return
+        }
+
+        if routine.workouts[index] != updatedWorkout {
+            routine.workouts[index] = updatedWorkout
+        }
+    }
+}
+
 private struct EmptyWorkoutsCTA: View {
     
     var body: some View {
@@ -138,7 +218,6 @@ private struct EmptyWorkoutsCTA: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Add your first workout")
                     .font(.headline)
-                    .foregroundColor(.primary)
                 
                 Text("Choose an exercise, then start logging sets right away.")
                     .font(.subheadline)
@@ -150,10 +229,53 @@ private struct EmptyWorkoutsCTA: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .foregroundColor(.white)
-                .background(Color(red: 221/255, green: 69/255, blue: 36/255))
+                .background(AppColors.success)
                 .cornerRadius(8)
         }
-        .padding(.vertical, 8)
+        .padding(18)
+        .background(AppColors.card)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
+    }
+}
+
+private struct WorkoutCard: View {
+    let workout: Workout
+    let index: Int
+
+    private var loggedCount: Int {
+        workout.sets.count + workout.loggedSets.reduce(0) { $0 + $1.sets.count }
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Text("\(index)")
+                .font(.title3.weight(.black))
+                .foregroundColor(.secondary)
+                .frame(width: 48, height: 48)
+                .background(AppColors.elevated)
+                .cornerRadius(8)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(workout.name)
+                    .font(.title3.weight(.black))
+                    .lineLimit(1)
+
+                HStack(spacing: 14) {
+                    Label("\(workout.sets.count) active", systemImage: "square.stack.3d.up.fill")
+                        .foregroundColor(AppColors.accent)
+                    Label("\(loggedCount) logged", systemImage: "checkmark")
+                        .foregroundColor(.secondary)
+                }
+                .font(.subheadline.weight(.bold))
+            }
+
+            Spacer()
+        }
+        .padding(18)
+        .background(AppColors.card)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
     }
 }
 

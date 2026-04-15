@@ -14,11 +14,16 @@ private enum SetInputField {
 
 struct NewSetCreator2: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var sets: [Workout.Set]
     var onAddSet: (@MainActor (Workout.Set) -> Void)?
     
-    @State private var weight: Double
+    @State private var displayWeight: Double
     @State private var reps: Int
+    @State private var haptic = UIImpactFeedbackGenerator(style: .heavy)
+    @State private var activeWeightUnit = UserData.shared.weightUnit
+    @State private var hasInitializedWeightUnit = false
+    private let initialStoredWeight: Double
     
     @FocusState private var focusedField: SetInputField?
     
@@ -37,50 +42,70 @@ struct NewSetCreator2: View {
     ) {
         self._sets = sets
         self._reps = State(initialValue: initialReps)
-        self._weight = State(initialValue: initialWeight)
+        self._displayWeight = State(initialValue: initialWeight)
+        self.initialStoredWeight = initialWeight
         self.onAddSet = onAddSet
     }
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 12) {
-                SetInputCard(
-                    title: "Weight",
-                    value: $weight,
-                    formatter: decimalFormatter,
-                    unit: "lb",
-                    keyboardType: .decimalPad,
-                    focusedField: $focusedField,
-                    field: .weight,
-                    decrement: { weight = max(0, weight - 5) },
-                    increment: { weight += 5 }
-                )
-                
-                SetInputCard(
-                    title: "Reps",
-                    value: Binding(
-                        get: { Double(reps) },
-                        set: { reps = max(0, Int($0.rounded())) }
-                    ),
-                    formatter: decimalFormatter,
-                    unit: "reps",
-                    keyboardType: .numberPad,
-                    focusedField: $focusedField,
-                    field: .reps,
-                    decrement: { reps = max(0, reps - 1) },
-                    increment: { reps += 1 }
-                )
-            }
+        VStack(spacing: 26) {
+            SetAdjuster(
+                title: "Weight (\(userData.weightUnit.abbreviatedTitle))",
+                valueText: displayWeight.formatted(),
+                focused: focusedField == .weight,
+                smallMinus: { displayWeight = max(0, displayWeight - userData.weightUnit.smallStep) },
+                largeMinus: { displayWeight = max(0, displayWeight - userData.weightUnit.largeStep) },
+                smallPlus: { displayWeight += userData.weightUnit.smallStep },
+                largePlus: { displayWeight += userData.weightUnit.largeStep },
+                smallMinusTitle: "-\(userData.weightUnit.smallStep.formatted(.number.precision(.fractionLength(0...1))))",
+                largeMinusTitle: "-\(userData.weightUnit.largeStep.formatted(.number.precision(.fractionLength(0...1))))",
+                smallPlusTitle: "+\(userData.weightUnit.smallStep.formatted(.number.precision(.fractionLength(0...1))))",
+                largePlusTitle: "+\(userData.weightUnit.largeStep.formatted(.number.precision(.fractionLength(0...1))))",
+                valueField: {
+                    TextField("Weight", value: $displayWeight, formatter: decimalFormatter)
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .weight)
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                }
+            )
+
+            SetAdjuster(
+                title: "Reps",
+                valueText: "\(reps)",
+                focused: focusedField == .reps,
+                smallMinus: { reps = max(0, reps - 1) },
+                largeMinus: { reps = max(0, reps - 5) },
+                smallPlus: { reps += 1 },
+                largePlus: { reps += 5 },
+                smallMinusTitle: "-1",
+                largeMinusTitle: "-5",
+                smallPlusTitle: "+1",
+                largePlusTitle: "+5",
+                valueField: {
+                    TextField(
+                        "Reps",
+                        value: Binding(
+                            get: { Double(reps) },
+                            set: { reps = max(0, Int($0.rounded())) }
+                        ),
+                        formatter: decimalFormatter
+                    )
+                    .keyboardType(.numberPad)
+                    .focused($focusedField, equals: .reps)
+                    .multilineTextAlignment(.center)
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                }
+            )
             
             Button {
                 addSet()
             } label: {
-                Text("Add Set")
-                    .font(.headline)
-                    .fontWeight(.bold)
+                Label("Log Set", systemImage: "checkmark.circle.fill")
+                    .font(.headline.weight(.black))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .background(Color(red: 221/255, green: 69/255, blue: 36/255))
+                    .padding(.vertical, 17)
+                    .background(AppColors.success)
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
@@ -94,12 +119,28 @@ struct NewSetCreator2: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(22)
+        .background(AppColors.card)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
+        .onAppear {
+            if !hasInitializedWeightUnit {
+                activeWeightUnit = userData.weightUnit
+                displayWeight = userData.weightUnit.displayWeight(fromStoredPounds: initialStoredWeight)
+                hasInitializedWeightUnit = true
+            }
+            haptic.prepare()
+        }
+        .onChange(of: userData.weightUnit) { newUnit in
+            let storedWeight = activeWeightUnit.storedPounds(fromDisplayWeight: displayWeight)
+            displayWeight = newUnit.displayWeight(fromStoredPounds: storedWeight)
+            activeWeightUnit = newUnit
+        }
     }
     
     @MainActor
     private func addSet() {
-        let newSet = Workout.Set(reps: reps, weight: weight)
+        let newSet = Workout.Set(reps: reps, weight: userData.weightUnit.storedPounds(fromDisplayWeight: displayWeight))
         if let onAddSet {
             onAddSet(newSet)
         } else {
@@ -107,78 +148,65 @@ struct NewSetCreator2: View {
         }
         focusedField = nil
         
-        let haptic = UIImpactFeedbackGenerator(style: .heavy)
         haptic.impactOccurred()
+        haptic.prepare()
     }
 }
 
-private struct SetInputCard: View {
-    
+private struct SetAdjuster<ValueField: View>: View {
     let title: String
-    @Binding var value: Double
-    let formatter: NumberFormatter
-    let unit: String
-    let keyboardType: UIKeyboardType
-    let focusedField: FocusState<SetInputField?>.Binding
-    let field: SetInputField
-    let decrement: () -> Void
-    let increment: () -> Void
+    let valueText: String
+    let focused: Bool
+    let smallMinus: () -> Void
+    let largeMinus: () -> Void
+    let smallPlus: () -> Void
+    let largePlus: () -> Void
+    let smallMinusTitle: String
+    let largeMinusTitle: String
+    let smallPlusTitle: String
+    let largePlusTitle: String
+    let valueField: () -> ValueField
     
     var body: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text(unit)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
-            }
-            
-            TextField(title, value: $value, formatter: formatter)
-                .keyboardType(keyboardType)
-                .focused(focusedField, equals: field)
-                .multilineTextAlignment(.center)
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .frame(height: 70)
-                .frame(maxWidth: .infinity)
-                .background(Color(.secondarySystemGroupedBackground))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(focusedField.wrappedValue == field ? Color(red: 221/255, green: 69/255, blue: 36/255) : Color.clear, lineWidth: 2)
-                )
-            
-            HStack(spacing: 8) {
-                StepButton(systemImage: "minus", action: decrement)
-                StepButton(systemImage: "plus", action: increment)
+        VStack(spacing: 12) {
+            Text(title.uppercased())
+                .font(.caption.weight(.black))
+                .tracking(4)
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 10) {
+                AdjustButton(title: largeMinusTitle, isEmphasized: true, action: largeMinus)
+                AdjustButton(title: smallMinusTitle, isEmphasized: false, action: smallMinus)
+
+                valueField()
+                    .frame(width: 88, height: 62)
+                    .background(AppColors.elevated)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(focused ? AppColors.accent : AppColors.border, lineWidth: 2)
+                    )
+                    .cornerRadius(8)
+
+                AdjustButton(title: smallPlusTitle, isEmphasized: false, action: smallPlus)
+                AdjustButton(title: largePlusTitle, isEmphasized: true, action: largePlus)
             }
         }
-        .padding(12)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
 }
 
-private struct StepButton: View {
-    
-    let systemImage: String
+private struct AdjustButton: View {
+    let title: String
+    let isEmphasized: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 14, weight: .bold))
+            Text(title)
+                .font(.headline.weight(.black))
+                .foregroundColor(isEmphasized ? .white : .primary)
                 .frame(maxWidth: .infinity)
-                .frame(height: 34)
-                .background(Color(.tertiarySystemGroupedBackground))
-                .foregroundColor(.primary)
+                .frame(height: isEmphasized ? 58 : 48)
+                .background(isEmphasized ? AppColors.accent : AppColors.elevated)
                 .cornerRadius(8)
         }
         .buttonStyle(.plain)

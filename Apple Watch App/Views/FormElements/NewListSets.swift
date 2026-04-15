@@ -9,6 +9,7 @@ import SwiftUI
 
 struct NewListSets: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var sets: [Workout.Set]
     
     var body: some View {
@@ -20,7 +21,7 @@ struct NewListSets: View {
                     Text("\(s.reps) reps")
                         .padding(.horizontal, 10)
                     Spacer()
-                    Text("\(s.weight.formatted()) lbs")
+                    Text(userData.weightUnit.formattedWeight(fromStoredPounds: s.weight))
                 }
             }
             .onDelete(perform: deleteSet)

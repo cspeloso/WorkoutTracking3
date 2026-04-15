@@ -17,7 +17,7 @@ struct Routine: Identifiable, Codable, Equatable {
     
     
     enum CodingKeys: CodingKey {
-        case name, weekday, workouts
+        case id, name, weekday, workouts
     }
     
     init(name: String, weekday: String, workouts: [Workout]){
@@ -29,6 +29,7 @@ struct Routine: Identifiable, Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
+        self.id = (try? container.decode(UUID.self, forKey: .id)) ?? UUID()
         self.name = try container.decode(String.self, forKey: .name)
         self.weekday = try container.decode(String.self, forKey: .weekday)
         self.workouts = try container.decode([Workout].self, forKey: .workouts)
@@ -37,6 +38,7 @@ struct Routine: Identifiable, Codable, Equatable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
+        try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encode(weekday, forKey: .weekday)
         try container.encode(workouts, forKey: .workouts)

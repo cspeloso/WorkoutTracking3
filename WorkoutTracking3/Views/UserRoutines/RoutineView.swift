@@ -4,8 +4,9 @@ let weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
 
 struct RoutineView: View {
     @EnvironmentObject var userData: UserData
-    @State private var selectedRoutineIndex: Int?
+    @State private var activeRoutine: Routine?
     @State private var shouldOpenRoutine = false
+    @State private var shouldAddRoutine = false
 
     private var currentDayOfWeek: String {
         let df = DateFormatter()
@@ -67,87 +68,115 @@ struct RoutineView: View {
     ]
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            AppColors.background.ignoresSafeArea()
+
             List {
                 Section {
-                    HomeHeroCard(
-                        hasRoutines: !userData.routines.isEmpty,
-                        startWorkout: openQuickWorkoutRoutine
-                    )
-                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 8, trailing: 0))
-                    .listRowBackground(Color(UIColor.systemGroupedBackground))
-                    .listRowSeparator(.hidden)
-                }
+                    HStack {
+                        Text("Routines")
+                            .font(.system(size: 42, weight: .black, design: .rounded))
 
-                if !userData.routines.isEmpty {
-                    Section {
-                        ForEach(sortedRoutineIndices, id: \.self) { index in
-                            let routine = userData.routines[index]
-                            
-                            NavigationLink(destination: RoutineDetailsView(routine: $userData.routines[index])) {
-                                RoutineRow(routine: routine, currentDayOfWeek: currentDayOfWeek)
+                        Spacer()
+
+                        Button {
+                            shouldAddRoutine = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .regular))
+                                .foregroundColor(.white)
+                                .frame(width: 64, height: 64)
+                                .background(AppColors.accent)
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 28)
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 6, trailing: 22))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
+                Section {
+                    if userData.routines.isEmpty {
+                        EmptyTodayCard {
+                            shouldAddRoutine = true
+                        }
+                    } else {
+                        ForEach(Array(sortedRoutineIndices.enumerated()), id: \.element) { row, index in
+                            Button {
+                                activeRoutine = userData.routines[index]
+                                shouldOpenRoutine = true
+                            } label: {
+                                RoutineCard(
+                                    routine: userData.routines[index],
+                                    accent: row == 0 && userData.routines[index].weekday == currentDayOfWeek ? AppColors.today : AppColors.accent,
+                                    showDayBadge: true
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteRoutine(at: index)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                         }
-                        .onDelete(perform: deleteRoutine)
-                    } header: {
-                        Text("Your routines")
                     }
                 }
-                
-                if userData.routines.isEmpty {
-                    Section {
-                        NavigationLink(destination: AddRoutine(routines: $userData.routines)) {
-                            EmptyRoutineCard()
-                        }
-                    } header: {
-                        Text("Create Routine")
-                    }
-                }
-                
+                .listRowInsets(EdgeInsets(top: 7, leading: 22, bottom: 7, trailing: 22))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
                 Section {
                     ForEach(routineTemplates) { template in
                         Button {
                             addTemplate(template)
                         } label: {
-                            TemplateRow(template: template)
+                            TemplateCard(template: template)
                         }
                         .buttonStyle(.plain)
                     }
                 } header: {
-                    Text("Start from a template")
+                    SectionTitle("Templates")
                 }
-                
-                NavigationLink(
-                    destination: selectedRoutineDestination(),
-                    isActive: $shouldOpenRoutine
-                ) {
-                    EmptyView()
-                }
-                .hidden()
+                .listRowInsets(EdgeInsets(top: 7, leading: 22, bottom: 7, trailing: 22))
+                .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                .listRowBackground(Color(UIColor.systemGroupedBackground))
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Today")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: AddRoutine(routines: $userData.routines)) {
-                        Text("Add routine")
-                    }
-                }
+            .listStyle(.plain)
+            .hideScrollContentBackgroundIfAvailable()
+
+            NavigationLink(destination: selectedRoutineDestination(), isActive: $shouldOpenRoutine) {
+                EmptyView()
+            }
+            .hidden()
+        }
+        .navigationBarHidden(true)
+        .sheet(isPresented: $shouldAddRoutine) {
+            NavigationView {
+                AddRoutine(routines: $userData.routines)
             }
         }
-        .navigationViewStyle(.stack)
     }
 
     func deleteRoutine(at offsets: IndexSet) {
         let originalIndexes = offsets.map { sortedRoutineIndices[$0] }
         userData.routines.remove(atOffsets: IndexSet(originalIndexes))
     }
+
+    private func deleteRoutine(at index: Int) {
+        guard userData.routines.indices.contains(index) else {
+            return
+        }
+
+        userData.routines.remove(at: index)
+    }
     
     private func openQuickWorkoutRoutine() {
         let index = quickWorkoutRoutineIndex()
-        selectedRoutineIndex = index
+        activeRoutine = userData.routines[index]
         shouldOpenRoutine = true
     }
     
@@ -172,15 +201,22 @@ struct RoutineView: View {
         }
         let routine = Routine(name: template.title, weekday: template.weekday, workouts: workouts)
         userData.routines.append(routine)
-        selectedRoutineIndex = userData.routines.count - 1
+        activeRoutine = routine
         shouldOpenRoutine = true
     }
     
     @ViewBuilder
     private func selectedRoutineDestination() -> some View {
-        if let selectedRoutineIndex,
-           userData.routines.indices.contains(selectedRoutineIndex) {
-            RoutineDetailsView(routine: $userData.routines[selectedRoutineIndex])
+        if let activeRoutine {
+            RoutineDetailsRoute(routine: activeRoutine) { updatedRoutine in
+                guard let index = userData.routines.firstIndex(where: { $0.id == updatedRoutine.id }) else {
+                    return
+                }
+
+                if userData.routines[index] != updatedRoutine {
+                    userData.routines[index] = updatedRoutine
+                }
+            }
         } else {
             EmptyView()
         }
@@ -283,6 +319,40 @@ private struct TemplateRow: View {
                 .cornerRadius(8)
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct TemplateCard: View {
+    let template: RoutineTemplate
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "sparkles")
+                .font(.title3.weight(.bold))
+                .foregroundColor(AppColors.accent)
+                .frame(width: 48, height: 48)
+                .background(AppColors.elevated)
+                .cornerRadius(8)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(template.title)
+                    .font(.headline.weight(.black))
+                Text("\(template.subtitle) · \(template.workouts.count) exercises")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Image(systemName: "plus")
+                .font(.headline.weight(.bold))
+                .foregroundColor(.secondary)
+        }
+        .padding(18)
+        .background(AppColors.card)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
     }
 }
 

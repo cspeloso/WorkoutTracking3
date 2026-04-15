@@ -9,6 +9,7 @@ import SwiftUI
 
 struct LoggedSetsView: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var workout: Workout
     
     var body: some View {
@@ -28,7 +29,7 @@ struct LoggedSetsView: View {
                 else {
                     List {
                         ForEach(workout.sets) { s in
-                            Text("\(s.reps) reps @ \(s.weight.formatted()) lbs")
+                            Text("\(s.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: s.weight))")
                         }
                     }
                 }
@@ -64,7 +65,7 @@ struct LoggedSetsView: View {
                                 Text("**Logged on \(formatDate(date: ls.loggedOnDate))**")
                             }
                             ForEach(ls.sets) { s in
-                                Text("\(s.reps) reps @ \(s.weight.formatted()) lbs")
+                                Text("\(s.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: s.weight))")
                             }
                         }
                     }

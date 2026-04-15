@@ -19,7 +19,7 @@ struct Workout: Identifiable, Codable, Equatable {
     var loggedSets: [LoggedSet]
     
     enum CodingKeys: CodingKey {
-        case name, sets, loggedSets, startDate
+        case id, name, sets, loggedSets, startDate
     }
     
     init(name: String, sets: [Workout.Set], loggedSets: [LoggedSet], startDate: Date = Date()){
@@ -32,6 +32,7 @@ struct Workout: Identifiable, Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
+        id = (try? container.decode(UUID.self, forKey: .id)) ?? UUID()
         name = try container.decode(String.self, forKey: .name)
         sets = try container.decode([Set].self, forKey: .sets)
         loggedSets = try container.decode([LoggedSet].self, forKey: .loggedSets)
@@ -48,6 +49,7 @@ struct Workout: Identifiable, Codable, Equatable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
+        try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encode(sets, forKey: .sets)
         try container.encode(loggedSets, forKey: .loggedSets)
@@ -95,7 +97,7 @@ struct Workout: Identifiable, Codable, Equatable {
         
         
         enum CodingKeys: CodingKey {
-            case reps, weight, startedDate
+            case id, reps, weight, startedDate
         }
         
         
@@ -107,6 +109,7 @@ struct Workout: Identifiable, Codable, Equatable {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
+            id = (try? container.decode(UUID.self, forKey: .id)) ?? UUID()
             reps = try container.decode(Int.self, forKey: .reps)
             weight = try container.decode(Double.self, forKey: .weight)
         }
@@ -114,6 +117,7 @@ struct Workout: Identifiable, Codable, Equatable {
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             
+            try container.encode(id, forKey: .id)
             try container.encode(reps, forKey: .reps)
             try container.encode(weight, forKey: .weight)
         }
@@ -129,7 +133,7 @@ struct Workout: Identifiable, Codable, Equatable {
         var loggedOnDate: Date
         
         enum CodingKeys: CodingKey {
-            case sets, loggedOnDate
+            case id, sets, loggedOnDate
         }
         
         init(sets: [Workout.Set], loggedOnDate: Date){
@@ -140,6 +144,7 @@ struct Workout: Identifiable, Codable, Equatable {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
+            id = (try? container.decode(UUID.self, forKey: .id)) ?? UUID()
             sets = try container.decode([Workout.Set].self, forKey: .sets)
             loggedOnDate = try container.decode(Date.self, forKey: .loggedOnDate)
         }
@@ -147,6 +152,7 @@ struct Workout: Identifiable, Codable, Equatable {
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             
+            try container.encode(id, forKey: .id)
             try container.encode(sets, forKey: .sets)
             try container.encode(loggedOnDate, forKey: .loggedOnDate)
         }

@@ -10,7 +10,7 @@ import SwiftUI
 struct AddWorkoutView: View {
     
     @Binding var workouts: [Workout]
-    @Binding var createdWorkoutIndex: Int?
+    @Binding var createdWorkoutID: Workout.ID?
     
     @Environment(\.presentationMode) var mode: Binding<PresentationMode>
     @State private var searchText = ""
@@ -82,9 +82,9 @@ struct AddWorkoutView: View {
             return
         }
         
-        let newIndex = workouts.count
-        workouts.append(Workout(name: name, sets: [], loggedSets: []))
-        createdWorkoutIndex = newIndex
+        let workout = Workout(name: name, sets: [], loggedSets: [])
+        workouts.append(workout)
+        createdWorkoutID = workout.id
         
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
@@ -96,9 +96,9 @@ struct AddWorkoutView: View {
 struct AddWorkoutView_Previews: PreviewProvider {
     
     @State static var workouts: [Workout] = []
-    @State static var createdWorkoutIndex: Int?
+    @State static var createdWorkoutID: Workout.ID?
     
     static var previews: some View {
-        AddWorkoutView(workouts: $workouts, createdWorkoutIndex: $createdWorkoutIndex)
+        AddWorkoutView(workouts: $workouts, createdWorkoutID: $createdWorkoutID)
     }
 }

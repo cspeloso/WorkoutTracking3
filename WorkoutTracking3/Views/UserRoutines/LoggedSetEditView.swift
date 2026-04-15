@@ -9,6 +9,7 @@ import SwiftUI
 
 struct LoggedSetEditView: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var loggedSet: Workout.LoggedSet
     
 //    @Environment(\.dismiss) var dismiss
@@ -28,7 +29,7 @@ struct LoggedSetEditView: View {
             
             Section {
                 ForEach(loggedSet.sets) { s in
-                    Text("\(s.reps) reps @ \(s.weight.formatted()) lbs")
+                    Text("\(s.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: s.weight))")
                 }
             }
         }

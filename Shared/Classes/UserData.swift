@@ -14,13 +14,27 @@ final class UserData: NSObject, ObservableObject, Codable {
 
     private static let routinesCloudKey = "UserDataRoutines"
     private static let routinesUpdatedAtKey = "UserDataRoutinesUpdatedAt"
+    private static let weightUnitKey = "UserDataWeightUnit"
     private static let legacyLocalKey = "UserDataFirstAttempt"
     private static let watchConnectivityRoutinesKey = "routinesData"
     private static let watchConnectivityUpdatedAtKey = "routinesUpdatedAt"
+    private static let watchConnectivityWeightUnitKey = "weightUnit"
+    private static let deletedRoutinesBackupKey = "DeletedUserDataRoutinesBackup"
+    private static let deletedRoutinesBackupCreatedAtKey = "DeletedUserDataRoutinesBackupCreatedAt"
+    private static let deletedRoutinesBackupRetention: TimeInterval = 30 * 24 * 60 * 60
 
     private var saveTask: DispatchWorkItem?
     private var isApplyingRemoteUpdate = false
+    private var isApplyingRemoteSettingsUpdate = false
     private var lastUpdatedAt: TimeInterval = 0
+    @Published private(set) var deletedDataBackupInfo: DeletedDataBackupInfo?
+    @Published var weightUnit: WeightUnit {
+        didSet {
+            if oldValue != weightUnit && !isApplyingRemoteSettingsUpdate {
+                saveWeightUnit()
+            }
+        }
+    }
 
     enum CodingKeys: CodingKey {
         case routines
@@ -37,6 +51,8 @@ final class UserData: NSObject, ObservableObject, Codable {
 
     private override init() {
         self.routines = []
+        self.deletedDataBackupInfo = nil
+        self.weightUnit = Self.loadWeightUnit()
         super.init()
 
         print("UserData singleton init at \(Date())")
@@ -68,6 +84,7 @@ final class UserData: NSObject, ObservableObject, Codable {
             print("No user data found locally or in iCloud")
         }
 
+        refreshDeletedDataBackupInfo()
         observeCloudChanges()
         observeAppLifecycle()
     }
@@ -75,6 +92,8 @@ final class UserData: NSObject, ObservableObject, Codable {
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.routines = try container.decode([Routine].self, forKey: .routines)
+        self.deletedDataBackupInfo = nil
+        self.weightUnit = .pounds
         super.init()
     }
 
@@ -87,6 +106,29 @@ final class UserData: NSObject, ObservableObject, Codable {
         saveToLocalDefaults()
         saveToCloud()
         sendToPairedDevice()
+    }
+
+    func deleteAllDataKeepingRestoreBackup() {
+        refreshDeletedDataBackupInfo()
+
+        if !routines.isEmpty {
+            saveDeletedDataBackup(routines)
+        }
+
+        lastUpdatedAt = Date().timeIntervalSince1970
+        routines = []
+    }
+
+    func restoreDeletedDataBackup() {
+        refreshDeletedDataBackupInfo()
+
+        guard let stored = Self.loadDeletedDataBackup() else {
+            return
+        }
+
+        clearDeletedDataBackup()
+        lastUpdatedAt = Date().timeIntervalSince1970
+        routines = stored.routines
     }
 
     func saveToCloud() {
@@ -143,6 +185,7 @@ final class UserData: NSObject, ObservableObject, Codable {
         ) { _ in
             print("iCloud user data changed")
             self.loadFromCloud()
+            self.loadWeightUnitFromCloud()
         }
     }
 
@@ -199,7 +242,9 @@ final class UserData: NSObject, ObservableObject, Codable {
 
     @objc private func handleAppDidBecomeActive() {
         print("App became active. Fetching latest shared user data.")
+        refreshDeletedDataBackupInfo()
         loadFromCloud()
+        loadWeightUnitFromCloud()
         requestPairedDeviceSync()
     }
 
@@ -312,6 +357,274 @@ final class UserData: NSObject, ObservableObject, Codable {
     }
 }
 
+enum WeightUnit: String, CaseIterable, Codable, Identifiable {
+    case pounds
+    case kilograms
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .pounds:
+            return "Pounds"
+        case .kilograms:
+            return "Kilograms"
+        }
+    }
+
+    var abbreviatedTitle: String {
+        switch self {
+        case .pounds:
+            return "lb"
+        case .kilograms:
+            return "kg"
+        }
+    }
+
+    var largeStep: Double {
+        switch self {
+        case .pounds:
+            return 5
+        case .kilograms:
+            return 2.5
+        }
+    }
+
+    var smallStep: Double {
+        switch self {
+        case .pounds:
+            return 2.5
+        case .kilograms:
+            return 1
+        }
+    }
+
+    func displayWeight(fromStoredPounds pounds: Double) -> Double {
+        switch self {
+        case .pounds:
+            return pounds
+        case .kilograms:
+            return pounds * 0.45359237
+        }
+    }
+
+    func storedPounds(fromDisplayWeight weight: Double) -> Double {
+        switch self {
+        case .pounds:
+            return weight
+        case .kilograms:
+            return weight / 0.45359237
+        }
+    }
+
+    func displayVolume(fromStoredPoundVolume volume: Double) -> Double {
+        switch self {
+        case .pounds:
+            return volume
+        case .kilograms:
+            return volume * 0.45359237
+        }
+    }
+
+    func formattedWeight(fromStoredPounds pounds: Double) -> String {
+        "\(displayWeight(fromStoredPounds: pounds).formatted(.number.precision(.fractionLength(0...1)))) \(abbreviatedTitle)"
+    }
+
+    func formattedVolume(fromStoredPoundVolume volume: Double) -> String {
+        displayVolume(fromStoredPoundVolume: volume).formatted(.number.precision(.fractionLength(0...1)))
+    }
+}
+
+// MARK: - Weight Unit Preference
+
+extension UserData {
+    private static func loadWeightUnit() -> WeightUnit {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        if let rawValue = store.string(forKey: weightUnitKey),
+           let unit = WeightUnit(rawValue: rawValue) {
+            UserDefaults.standard.set(rawValue, forKey: weightUnitKey)
+            return unit
+        }
+
+        if let rawValue = UserDefaults.standard.string(forKey: weightUnitKey),
+           let unit = WeightUnit(rawValue: rawValue) {
+            return unit
+        }
+
+        return .pounds
+    }
+
+    private func saveWeightUnit() {
+        let rawValue = weightUnit.rawValue
+        let store = NSUbiquitousKeyValueStore.default
+        UserDefaults.standard.set(rawValue, forKey: Self.weightUnitKey)
+        store.set(rawValue, forKey: Self.weightUnitKey)
+        store.synchronize()
+        sendToPairedDevice()
+    }
+
+    private func loadWeightUnitFromCloud() {
+        let unit = Self.loadWeightUnit()
+        guard unit != weightUnit else {
+            return
+        }
+
+        isApplyingRemoteSettingsUpdate = true
+        weightUnit = unit
+        isApplyingRemoteSettingsUpdate = false
+    }
+
+    private func applyRemoteWeightUnit(_ rawValue: String?) {
+        guard let rawValue,
+              let unit = WeightUnit(rawValue: rawValue),
+              unit != weightUnit else {
+            return
+        }
+
+        isApplyingRemoteSettingsUpdate = true
+        weightUnit = unit
+        isApplyingRemoteSettingsUpdate = false
+        saveWeightUnit()
+    }
+}
+
+struct DeletedDataBackupInfo {
+    let createdAt: Date
+    let expiresAt: Date
+    let routineCount: Int
+
+    var daysRemaining: Int {
+        max(0, Int(ceil(expiresAt.timeIntervalSinceNow / (24 * 60 * 60))))
+    }
+}
+
+// MARK: - Deleted Data Restore Backup
+
+extension UserData {
+    private struct DeletedDataBackup {
+        let routines: [Routine]
+        let createdAt: Date
+
+        var expiresAt: Date {
+            createdAt.addingTimeInterval(UserData.deletedRoutinesBackupRetention)
+        }
+
+        var isExpired: Bool {
+            Date() >= expiresAt
+        }
+    }
+
+    private func saveDeletedDataBackup(_ routines: [Routine]) {
+        do {
+            let encoded = try JSONEncoder().encode(routines)
+            let createdAt = Date().timeIntervalSince1970
+            let store = NSUbiquitousKeyValueStore.default
+
+            UserDefaults.standard.set(encoded, forKey: Self.deletedRoutinesBackupKey)
+            UserDefaults.standard.set(createdAt, forKey: Self.deletedRoutinesBackupCreatedAtKey)
+            store.set(encoded, forKey: Self.deletedRoutinesBackupKey)
+            store.set(createdAt, forKey: Self.deletedRoutinesBackupCreatedAtKey)
+            store.synchronize()
+
+            refreshDeletedDataBackupInfo()
+        } catch {
+            print("Failed to encode deleted data backup: \(error.localizedDescription)")
+        }
+    }
+
+    private func refreshDeletedDataBackupInfo() {
+        if let stored = Self.loadDeletedDataBackup() {
+            deletedDataBackupInfo = DeletedDataBackupInfo(
+                createdAt: stored.createdAt,
+                expiresAt: stored.expiresAt,
+                routineCount: stored.routines.count
+            )
+        } else {
+            deletedDataBackupInfo = nil
+        }
+    }
+
+    private func clearDeletedDataBackup() {
+        let store = NSUbiquitousKeyValueStore.default
+        UserDefaults.standard.removeObject(forKey: Self.deletedRoutinesBackupKey)
+        UserDefaults.standard.removeObject(forKey: Self.deletedRoutinesBackupCreatedAtKey)
+        store.removeObject(forKey: Self.deletedRoutinesBackupKey)
+        store.removeObject(forKey: Self.deletedRoutinesBackupCreatedAtKey)
+        store.synchronize()
+        deletedDataBackupInfo = nil
+    }
+
+    private static func loadDeletedDataBackup() -> DeletedDataBackup? {
+        let cloudBackup = loadDeletedDataBackupFromCloud()
+        let localBackup = loadDeletedDataBackupFromLocalDefaults()
+
+        let backup: DeletedDataBackup?
+        switch (cloudBackup, localBackup) {
+        case let (cloud?, local?):
+            backup = local.createdAt > cloud.createdAt ? local : cloud
+        case let (cloud?, nil):
+            backup = cloud
+        case let (nil, local?):
+            backup = local
+        case (nil, nil):
+            backup = nil
+        }
+
+        guard let backup else {
+            return nil
+        }
+
+        if backup.isExpired {
+            clearExpiredDeletedDataBackup()
+            return nil
+        }
+
+        return backup
+    }
+
+    private static func loadDeletedDataBackupFromCloud() -> DeletedDataBackup? {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        guard let data = store.data(forKey: deletedRoutinesBackupKey),
+              let routines = try? JSONDecoder().decode([Routine].self, from: data) else {
+            return nil
+        }
+
+        let createdAt = store.double(forKey: deletedRoutinesBackupCreatedAtKey)
+        guard createdAt > 0 else {
+            return nil
+        }
+
+        return DeletedDataBackup(routines: routines, createdAt: Date(timeIntervalSince1970: createdAt))
+    }
+
+    private static func loadDeletedDataBackupFromLocalDefaults() -> DeletedDataBackup? {
+        guard let data = UserDefaults.standard.data(forKey: deletedRoutinesBackupKey),
+              let routines = try? JSONDecoder().decode([Routine].self, from: data) else {
+            return nil
+        }
+
+        let createdAt = UserDefaults.standard.double(forKey: deletedRoutinesBackupCreatedAtKey)
+        guard createdAt > 0 else {
+            return nil
+        }
+
+        return DeletedDataBackup(routines: routines, createdAt: Date(timeIntervalSince1970: createdAt))
+    }
+
+    private static func clearExpiredDeletedDataBackup() {
+        let store = NSUbiquitousKeyValueStore.default
+        UserDefaults.standard.removeObject(forKey: deletedRoutinesBackupKey)
+        UserDefaults.standard.removeObject(forKey: deletedRoutinesBackupCreatedAtKey)
+        store.removeObject(forKey: deletedRoutinesBackupKey)
+        store.removeObject(forKey: deletedRoutinesBackupCreatedAtKey)
+        store.synchronize()
+    }
+}
+
 // MARK: - WatchConnectivity
 
 extension UserData: WCSessionDelegate {
@@ -337,7 +650,8 @@ extension UserData: WCSessionDelegate {
             let encoded = try JSONEncoder().encode(routines)
             let payload: [String: Any] = [
                 Self.watchConnectivityRoutinesKey: encoded,
-                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt
+                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt,
+                Self.watchConnectivityWeightUnitKey: weightUnit.rawValue
             ]
 
             if session.activationState == .activated {
@@ -373,6 +687,8 @@ extension UserData: WCSessionDelegate {
             sendToPairedDevice()
             return
         }
+
+        applyRemoteWeightUnit(payload[Self.watchConnectivityWeightUnitKey] as? String)
 
         guard let data = payload[Self.watchConnectivityRoutinesKey] as? Data,
               let decoded = try? JSONDecoder().decode([Routine].self, from: data) else {
@@ -410,7 +726,8 @@ extension UserData: WCSessionDelegate {
            let encoded = try? JSONEncoder().encode(routines) {
             replyHandler([
                 Self.watchConnectivityRoutinesKey: encoded,
-                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt
+                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt,
+                Self.watchConnectivityWeightUnitKey: weightUnit.rawValue
             ])
             return
         }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MostRecentLoggedSetView: View {
     
+    @EnvironmentObject private var userData: UserData
     var mostRecentLoggedSet: Workout.LoggedSet
     
     var body: some View {
@@ -17,7 +18,7 @@ struct MostRecentLoggedSetView: View {
                 .font(.headline)
             
             ForEach(mostRecentLoggedSet.sets) { set in
-                Text("Reps: \(set.reps.formatted()), Weight: \(set.weight.formatted())")
+                Text("Reps: \(set.reps.formatted()), Weight: \(userData.weightUnit.formattedWeight(fromStoredPounds: set.weight))")
             }
         }
         .padding()
