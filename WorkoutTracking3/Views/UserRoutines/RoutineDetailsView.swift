@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RoutineDetailsView: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var routine: Routine
     @State private var createdWorkoutID: Workout.ID?
     @State private var activeWorkout: Workout?
@@ -54,6 +55,8 @@ struct RoutineDetailsView: View {
                 .listRowSeparator(.hidden)
 
                 Section {
+                    SectionTitle("Routine Details")
+
                     TextField("Routine Name", text: $routine.name)
                         .font(.headline.weight(.bold))
                         .padding(16)
@@ -73,14 +76,14 @@ struct RoutineDetailsView: View {
                     .background(AppColors.card)
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
                     .cornerRadius(8)
-                } header: {
-                    SectionTitle("Routine Details")
                 }
                 .listRowInsets(EdgeInsets(top: 6, leading: 22, bottom: 6, trailing: 22))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
                 Section {
+                    SectionTitle("Workouts")
+
                     if routine.workouts.isEmpty {
                         Button {
                             shouldShowAddWorkout = true
@@ -94,7 +97,11 @@ struct RoutineDetailsView: View {
                                 activeWorkout = routine.workouts[index]
                                 shouldShowWorkout = true
                             } label: {
-                                WorkoutCard(workout: routine.workouts[index], index: index + 1)
+                                WorkoutCard(
+                                    workout: routine.workouts[index],
+                                    index: index + 1,
+                                    loggedCount: loggedSetCount(for: routine.workouts[index])
+                                )
                             }
                             .buttonStyle(.plain)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -107,10 +114,32 @@ struct RoutineDetailsView: View {
                         }
                         .onMove(perform: moveWorkout)
                     }
-                } header: {
-                    SectionTitle("Workouts")
                 }
                 .listRowInsets(EdgeInsets(top: 7, leading: 22, bottom: 7, trailing: 22))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
+                Section {
+                    SectionTitle("Manage")
+
+                    Button {
+                        routine.isArchived.toggle()
+                    } label: {
+                        Label(
+                            routine.isArchived ? "Unarchive Routine" : "Archive Routine",
+                            systemImage: routine.isArchived ? "archivebox.fill" : "archivebox"
+                        )
+                        .font(.headline.weight(.black))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .foregroundColor(routine.isArchived ? .white : AppColors.accent)
+                        .background(routine.isArchived ? AppColors.today : AppColors.card)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 24, trailing: 22))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             }
@@ -173,6 +202,22 @@ struct RoutineDetailsView: View {
     }
     func moveWorkout(from source: IndexSet, to destination: Int){
         routine.workouts.move(fromOffsets: source, toOffset: destination)
+    }
+
+    private func loggedSetCount(for workout: Workout) -> Int {
+        let normalizedWorkoutName = workout.name.normalizedExerciseName
+        var matchingWorkouts = userData.routines
+            .flatMap(\.workouts)
+            .filter { $0.name.normalizedExerciseName == normalizedWorkoutName }
+
+        matchingWorkouts.removeAll { localWorkout in
+            routine.workouts.contains(where: { $0.id == localWorkout.id })
+        }
+        matchingWorkouts.append(contentsOf: routine.workouts.filter { $0.name.normalizedExerciseName == normalizedWorkoutName })
+
+        return matchingWorkouts
+            .flatMap(\.loggedSets)
+            .reduce(0) { $0 + $1.sets.count }
     }
 }
 
@@ -242,39 +287,84 @@ private struct EmptyWorkoutsCTA: View {
 private struct WorkoutCard: View {
     let workout: Workout
     let index: Int
-
-    private var loggedCount: Int {
-        workout.sets.count + workout.loggedSets.reduce(0) { $0 + $1.sets.count }
-    }
+    let loggedCount: Int
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Text("\(index)")
                 .font(.title3.weight(.black))
                 .foregroundColor(.secondary)
-                .frame(width: 48, height: 48)
+                .frame(width: 42, height: 52)
                 .background(AppColors.elevated)
                 .cornerRadius(8)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(workout.name)
                     .font(.title3.weight(.black))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.78)
 
-                HStack(spacing: 14) {
-                    Label("\(workout.sets.count) active", systemImage: "square.stack.3d.up.fill")
-                        .foregroundColor(AppColors.accent)
-                    Label("\(loggedCount) logged", systemImage: "checkmark")
-                        .foregroundColor(.secondary)
+                HStack(spacing: 8) {
+                    WorkoutStatChip(
+                        value: "\(workout.sets.count)",
+                        label: "active",
+                        systemImage: "square.stack.3d.up.fill",
+                        color: AppColors.accent,
+                        minWidth: 84
+                    )
+
+                    WorkoutStatChip(
+                        value: "\(loggedCount)",
+                        label: "logged",
+                        systemImage: "checkmark",
+                        color: .secondary,
+                        minWidth: 98
+                    )
                 }
-                .font(.subheadline.weight(.bold))
             }
 
             Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.headline.weight(.bold))
+                .foregroundColor(.secondary.opacity(0.6))
         }
-        .padding(18)
+        .padding(16)
         .background(AppColors.card)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
+    }
+}
+
+private struct WorkoutStatChip: View {
+    let value: String
+    let label: String
+    let systemImage: String
+    let color: Color
+    let minWidth: CGFloat
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.black))
+                .foregroundColor(color)
+
+            Text(value)
+                .font(.caption.weight(.black))
+                .foregroundColor(color == .secondary ? .secondary : color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Text(label)
+                .font(.caption.weight(.bold))
+                .foregroundColor(color == .secondary ? .secondary : color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .frame(minWidth: minWidth, alignment: .leading)
+        .background(AppColors.elevated)
         .cornerRadius(8)
     }
 }

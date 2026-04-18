@@ -12,7 +12,7 @@ struct RoutineView: View {
     }
 
     private var sortedRoutineIndices: [Int] {
-        userData.routines.indices.sorted { a, b in
+        userData.routines.indices.filter { !userData.routines[$0].isArchived }.sorted { a, b in
             let ra = userData.routines[a]
             let rb = userData.routines[b]
 

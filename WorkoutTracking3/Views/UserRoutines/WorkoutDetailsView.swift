@@ -15,7 +15,7 @@ struct WorkoutDetailsView: View {
     @State private var navigateToHistory = false
     @State private var visibleSets: [Workout.Set] = []
     @State private var haptic = UIImpactFeedbackGenerator(style: .heavy)
-    @State private var selectedProgressRange: ProgressRange = .threeMonths
+    @State private var selectedProgressRange: ProgressRange = .all
 
     private var suggestedSet: Workout.Set {
         if let currentSet = visibleSets.last {
@@ -26,18 +26,36 @@ struct WorkoutDetailsView: View {
             return currentSet
         }
         
-        if let recentSet = workout.getMostRecentLoggedSet()?.sets.last {
+        if let recentSet = mostRecentMatchingLoggedSet?.sets.last {
             return recentSet
         }
         
         return Workout.Set(reps: 10, weight: 0)
     }
 
+    private var matchingLoggedSets: [Workout.LoggedSet] {
+        let normalizedWorkoutName = workout.name.normalizedExerciseName
+        var loggedSets = userData.routines
+            .flatMap(\.workouts)
+            .filter { $0.id != workout.id && $0.name.normalizedExerciseName == normalizedWorkoutName }
+            .flatMap(\.loggedSets)
+
+        loggedSets.append(contentsOf: workout.loggedSets)
+        return loggedSets.sorted { $0.loggedOnDate > $1.loggedOnDate }
+    }
+
+    private var mostRecentMatchingLoggedSet: Workout.LoggedSet? {
+        matchingLoggedSets.first
+    }
+
     private var workoutProgressPoints: [ProgressPoint] {
         ProgressDataBuilder.points(
-            for: workout,
+            forWorkoutName: workout.name,
+            in: userData.routines,
             metric: .maxWeight,
-            range: selectedProgressRange
+            range: selectedProgressRange,
+            includeActiveSets: false,
+            currentWorkout: workout
         )
     }
 
@@ -140,7 +158,7 @@ struct WorkoutDetailsView: View {
                         .hidden()
                     )
 
-                    if let mostRecentLoggedSet = workout.getMostRecentLoggedSet() {
+                    if let mostRecentLoggedSet = mostRecentMatchingLoggedSet {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionTitle("Most Recent")
                             MostRecentLoggedSetView(mostRecentLoggedSet: mostRecentLoggedSet)

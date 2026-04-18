@@ -43,8 +43,12 @@ struct HomeView: View {
         TrainingStats(routines: userData.routines)
     }
 
+    private var activeRoutineIndices: [Int] {
+        userData.routines.indices.filter { !userData.routines[$0].isArchived }
+    }
+
     private var todaysRoutineIndex: Int? {
-        userData.routines.firstIndex { $0.weekday == currentDayOfWeek }
+        userData.routines.firstIndex { $0.weekday == currentDayOfWeek && !$0.isArchived }
     }
 
     var body: some View {
@@ -95,10 +99,10 @@ struct HomeView: View {
                         }
                     }
 
-                    if !userData.routines.isEmpty {
+                    if !activeRoutineIndices.isEmpty {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionTitle("Quick Start")
-                            ForEach(userData.routines.indices, id: \.self) { index in
+                            ForEach(activeRoutineIndices, id: \.self) { index in
                                 Button {
                                     activeRoutine = userData.routines[index]
                                     shouldOpenRoutine = true
@@ -319,6 +323,13 @@ struct SectionTitle: View {
             .font(.caption.weight(.black))
             .tracking(1.5)
             .foregroundColor(.secondary)
+    }
+}
+
+extension String {
+    var normalizedExerciseName: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 }
 
@@ -599,7 +610,7 @@ struct ProgressRangeControls: View {
 }
 
 struct ProgressPoint: Identifiable, Equatable {
-    let id = UUID()
+    var id: Date { date }
     let date: Date
     let value: Double
 }
@@ -608,6 +619,7 @@ struct ProgressLineChart: View {
     let points: [ProgressPoint]
     let metric: ProgressMetric
     let emptyText: String
+    @State private var selectedPoint: ProgressPoint?
 
     private var sortedPoints: [ProgressPoint] {
         points.sorted { $0.date < $1.date }
@@ -619,6 +631,39 @@ struct ProgressLineChart: View {
 
     private var minValue: Double {
         sortedPoints.map(\.value).min() ?? 0
+    }
+
+    private var latestPoint: ProgressPoint? {
+        sortedPoints.last
+    }
+
+    private var bestPoint: ProgressPoint? {
+        sortedPoints.max { $0.value < $1.value }
+    }
+
+    private var chartBounds: (lower: Double, upper: Double) {
+        let rawRange = maxValue - minValue
+        let padding = rawRange == 0 ? max(maxValue * 0.1, 1) : rawRange * 0.14
+        let lowerBound = max(0, minValue - padding)
+        return (lowerBound, maxValue + padding)
+    }
+
+    private var highlightedPoints: [ProgressPoint] {
+        guard sortedPoints.count > 45 else {
+            return sortedPoints
+        }
+
+        var uniquePoints: [ProgressPoint] = []
+        let candidates = [sortedPoints.first, bestPoint, sortedPoints.last].compactMap { $0 }
+        for point in candidates where !uniquePoints.contains(where: { Calendar.current.isDate($0.date, inSameDayAs: point.date) }) {
+            uniquePoints.append(point)
+        }
+
+        return uniquePoints
+    }
+
+    private var visiblePoints: [ProgressPoint] {
+        selectedPoint == nil ? highlightedPoints : sortedPoints
     }
 
     var body: some View {
@@ -633,32 +678,85 @@ struct ProgressLineChart: View {
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
                     .cornerRadius(8)
             } else {
-                HStack {
-                    Text(metric.formattedRawValue(maxValue))
-                        .font(.caption.weight(.black))
-                        .foregroundColor(AppColors.accent)
-                    Spacer()
-                    Text("\(sortedPoints.count) entries")
-                        .font(.caption.weight(.bold))
-                        .foregroundColor(.secondary)
+                HStack(spacing: 12) {
+                    ChartSummaryValue(
+                        label: "Latest",
+                        value: metric.formattedRawValue(latestPoint?.value ?? 0),
+                        color: AppColors.accent
+                    )
+                    ChartSummaryValue(
+                        label: "Best",
+                        value: metric.formattedRawValue(bestPoint?.value ?? 0),
+                        color: AppColors.accent
+                    )
+                    ChartSummaryValue(
+                        label: "Points",
+                        value: "\(sortedPoints.count)",
+                        color: .primary
+                    )
                 }
 
                 GeometryReader { proxy in
                     ZStack {
-                        VStack(spacing: proxy.size.height / 3) {
-                            Divider().background(AppColors.border)
-                            Divider().background(AppColors.border)
-                            Divider().background(AppColors.border)
+                        VStack(spacing: 0) {
+                            ForEach(0..<4, id: \.self) { index in
+                                Divider().background(AppColors.border)
+                                if index < 3 {
+                                    Spacer()
+                                }
+                            }
+                        }
+
+                        VStack {
+                            Text(metric.formattedRawValue(chartBounds.upper))
+                            Spacer()
+                            Text(metric.formattedRawValue(chartBounds.lower))
+                        }
+                        .font(.caption2.weight(.bold))
+                        .foregroundColor(.secondary.opacity(0.8))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if let selectedPoint {
+                            let selectedLocation = chartLocation(for: selectedPoint, size: proxy.size)
+
+                            Path { path in
+                                path.move(to: CGPoint(x: selectedLocation.x, y: 8))
+                                path.addLine(to: CGPoint(x: selectedLocation.x, y: proxy.size.height - 8))
+                            }
+                            .stroke(AppColors.border, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        }
+
+                        if sortedPoints.count > 1 {
+                            Path { path in
+                                guard let firstPoint = sortedPoints.first,
+                                      let lastPoint = sortedPoints.last else {
+                                    return
+                                }
+
+                                let firstLocation = chartLocation(for: firstPoint, size: proxy.size)
+                                let lastLocation = chartLocation(for: lastPoint, size: proxy.size)
+                                path.move(to: firstLocation)
+
+                                for point in sortedPoints.dropFirst() {
+                                    path.addLine(to: chartLocation(for: point, size: proxy.size))
+                                }
+
+                                path.addLine(to: CGPoint(x: lastLocation.x, y: proxy.size.height))
+                                path.addLine(to: CGPoint(x: firstLocation.x, y: proxy.size.height))
+                                path.closeSubpath()
+                            }
+                            .fill(
+                                LinearGradient(
+                                    colors: [AppColors.accent.opacity(0.18), AppColors.accent.opacity(0.02)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                         }
 
                         Path { path in
                             for (index, point) in sortedPoints.enumerated() {
-                                let location = chartLocation(
-                                    for: point,
-                                    index: index,
-                                    count: sortedPoints.count,
-                                    size: proxy.size
-                                )
+                                let location = chartLocation(for: point, size: proxy.size)
 
                                 if index == 0 {
                                     path.move(to: location)
@@ -667,22 +765,47 @@ struct ProgressLineChart: View {
                                 }
                             }
                         }
-                        .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
 
-                        ForEach(Array(sortedPoints.enumerated()), id: \.element.id) { index, point in
+                        ForEach(visiblePoints) { point in
                             Circle()
                                 .fill(AppColors.accent)
-                                .frame(width: 7, height: 7)
-                                .position(chartLocation(
-                                    for: point,
-                                    index: index,
-                                    count: sortedPoints.count,
-                                    size: proxy.size
-                                ))
+                                .overlay(Circle().stroke(AppColors.card, lineWidth: 2))
+                                .frame(width: pointSize(for: point), height: pointSize(for: point))
+                                .position(chartLocation(for: point, size: proxy.size))
+                        }
+
+                        if let selectedPoint {
+                            let selectedLocation = chartLocation(for: selectedPoint, size: proxy.size)
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(metric.formattedRawValue(selectedPoint.value))
+                                    .font(.caption.weight(.black))
+                                    .foregroundColor(AppColors.accent)
+                                Text(shortDate(selectedPoint.date))
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(AppColors.elevated)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+                            .cornerRadius(8)
+                            .position(calloutLocation(for: selectedLocation, in: proxy.size))
                         }
                     }
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                selectedPoint = nearestPoint(to: value.location, size: proxy.size)
+                            }
+                    )
                 }
-                .frame(height: 180)
+                .frame(height: 210)
+                .onChange(of: points) { _ in
+                    selectedPoint = nil
+                }
 
                 HStack {
                     Text(shortDate(sortedPoints.first?.date))
@@ -699,12 +822,51 @@ struct ProgressLineChart: View {
         .cornerRadius(8)
     }
 
-    private func chartLocation(for point: ProgressPoint, index: Int, count: Int, size: CGSize) -> CGPoint {
-        let x = count <= 1 ? size.width / 2 : size.width * CGFloat(index) / CGFloat(count - 1)
-        let valueRange = max(maxValue - minValue, 1)
-        let normalizedY = (point.value - minValue) / valueRange
-        let y = size.height - (size.height * CGFloat(normalizedY))
+    private func chartLocation(for point: ProgressPoint, size: CGSize) -> CGPoint {
+        let horizontalInset: CGFloat = 10
+        let verticalInset: CGFloat = 16
+        let usableWidth = max(size.width - (horizontalInset * 2), 1)
+        let usableHeight = max(size.height - (verticalInset * 2), 1)
+        let firstDate = sortedPoints.first?.date ?? point.date
+        let lastDate = sortedPoints.last?.date ?? point.date
+        let dateRange = max(lastDate.timeIntervalSince(firstDate), 1)
+        let normalizedX = sortedPoints.count <= 1 ? 0.5 : point.date.timeIntervalSince(firstDate) / dateRange
+        let x = horizontalInset + (usableWidth * CGFloat(normalizedX))
+        let valueRange = max(chartBounds.upper - chartBounds.lower, 1)
+        let normalizedY = (point.value - chartBounds.lower) / valueRange
+        let y = verticalInset + usableHeight - (usableHeight * CGFloat(normalizedY))
         return CGPoint(x: x, y: min(max(y, 0), size.height))
+    }
+
+    private func nearestPoint(to location: CGPoint, size: CGSize) -> ProgressPoint? {
+        sortedPoints.min { lhs, rhs in
+            let lhsLocation = chartLocation(for: lhs, size: size)
+            let rhsLocation = chartLocation(for: rhs, size: size)
+            return distanceSquared(from: lhsLocation, to: location) < distanceSquared(from: rhsLocation, to: location)
+        }
+    }
+
+    private func distanceSquared(from lhs: CGPoint, to rhs: CGPoint) -> CGFloat {
+        let xDistance = lhs.x - rhs.x
+        let yDistance = lhs.y - rhs.y
+        return (xDistance * xDistance) + (yDistance * yDistance)
+    }
+
+    private func pointSize(for point: ProgressPoint) -> CGFloat {
+        guard selectedPoint != point else {
+            return 12
+        }
+
+        return selectedPoint == nil && sortedPoints.count > 45 ? 9 : 6
+    }
+
+    private func calloutLocation(for pointLocation: CGPoint, in size: CGSize) -> CGPoint {
+        let calloutWidth: CGFloat = 96
+        let calloutHeight: CGFloat = 48
+        let x = min(max(pointLocation.x, calloutWidth / 2), size.width - (calloutWidth / 2))
+        let preferredY = pointLocation.y - 42
+        let y = preferredY < calloutHeight / 2 ? pointLocation.y + 42 : preferredY
+        return CGPoint(x: x, y: min(max(y, calloutHeight / 2), size.height - (calloutHeight / 2)))
     }
 
     private func shortDate(_ date: Date?) -> String {
@@ -715,6 +877,26 @@ struct ProgressLineChart: View {
         let formatter = DateFormatter()
         formatter.setLocalizedDateFormatFromTemplate("MMM d")
         return formatter.string(from: date)
+    }
+}
+
+struct ChartSummaryValue: View {
+    let label: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.caption2.weight(.black))
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.caption.weight(.black))
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -935,7 +1117,7 @@ enum ProgressDataBuilder {
     ) -> [ProgressPoint] {
         let loggedSets = routines.flatMap { routine in
             routine.workouts.flatMap { workout in
-                datedSets(for: workout)
+                datedSets(for: workout, includeActiveSets: true)
             }
         }
 
@@ -949,10 +1131,40 @@ enum ProgressDataBuilder {
     static func points(
         for workout: Workout,
         metric: ProgressMetric,
-        range: ProgressRange
+        range: ProgressRange,
+        includeActiveSets: Bool = true
     ) -> [ProgressPoint] {
         points(
-            datedSets: datedSets(for: workout),
+            datedSets: datedSets(for: workout, includeActiveSets: includeActiveSets),
+            metric: metric,
+            range: range
+        )
+    }
+
+    static func points(
+        forWorkoutName workoutName: String,
+        in routines: [Routine],
+        metric: ProgressMetric,
+        range: ProgressRange,
+        includeActiveSets: Bool = true,
+        currentWorkout: Workout? = nil
+    ) -> [ProgressPoint] {
+        let normalizedWorkoutName = workoutName.normalizedExerciseName
+        var matchingWorkouts = routines
+            .flatMap(\.workouts)
+            .filter { $0.name.normalizedExerciseName == normalizedWorkoutName }
+
+        if let currentWorkout {
+            matchingWorkouts.removeAll { $0.id == currentWorkout.id }
+            matchingWorkouts.append(currentWorkout)
+        }
+
+        let matchingSets = matchingWorkouts.flatMap { workout in
+            datedSets(for: workout, includeActiveSets: includeActiveSets)
+        }
+
+        return points(
+            datedSets: matchingSets,
             metric: metric,
             range: range
         )
@@ -972,11 +1184,12 @@ enum ProgressDataBuilder {
             : (range.startDate(relativeTo: endDate) ?? Date.distantPast)
         let normalizedStart = calendar.startOfDay(for: min(startDate, endDate))
         let normalizedEnd = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: max(startDate, endDate))) ?? endDate
+        let bucket = bucket(for: range, startDate: normalizedStart, endDate: normalizedEnd, calendar: calendar)
 
         let groupedSets = Dictionary(grouping: datedSets.filter { item in
             item.date >= normalizedStart && item.date < normalizedEnd
         }) { item in
-            calendar.startOfDay(for: item.date)
+            bucket.startDate(for: item.date, calendar: calendar)
         }
 
         return groupedSets.map { date, items in
@@ -986,10 +1199,15 @@ enum ProgressDataBuilder {
         .sorted { $0.date < $1.date }
     }
 
-    private static func datedSets(for workout: Workout) -> [(date: Date, set: Workout.Set)] {
-        let activeSets = workout.sets.map { set in
-            (date: workout.startDate, set: set)
-        }
+    private static func datedSets(
+        for workout: Workout,
+        includeActiveSets: Bool
+    ) -> [(date: Date, set: Workout.Set)] {
+        let activeSets = includeActiveSets
+            ? workout.sets.map { set in
+                (date: workout.startDate, set: set)
+            }
+            : []
         
         let completedSets = workout.loggedSets.flatMap { loggedSet in
             loggedSet.sets.map { set in
@@ -998,6 +1216,34 @@ enum ProgressDataBuilder {
         }
         
         return activeSets + completedSets
+    }
+
+    private static func bucket(
+        for range: ProgressRange,
+        startDate: Date,
+        endDate: Date,
+        calendar: Calendar
+    ) -> ProgressBucket {
+        let dayCount = calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0
+
+        switch range {
+        case .oneMonth, .threeMonths:
+            return .day
+        case .sixMonths:
+            return dayCount > 120 ? .week : .day
+        case .oneYear:
+            return .week
+        case .all:
+            if dayCount > 540 {
+                return .month
+            }
+
+            if dayCount > 120 {
+                return .week
+            }
+
+            return .day
+        }
     }
 
     private static func value(for sets: [Workout.Set], metric: ProgressMetric) -> Double {
@@ -1010,6 +1256,24 @@ enum ProgressDataBuilder {
             return Double(sets.map(\.reps).max() ?? 0)
         case .bestVolume:
             return sets.reduce(0) { $0 + ($1.weight * Double($1.reps)) }
+        }
+    }
+
+    private enum ProgressBucket {
+        case day
+        case week
+        case month
+
+        func startDate(for date: Date, calendar: Calendar) -> Date {
+            switch self {
+            case .day:
+                return calendar.startOfDay(for: date)
+            case .week:
+                return calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
+            case .month:
+                let components = calendar.dateComponents([.year, .month], from: date)
+                return calendar.date(from: components) ?? calendar.startOfDay(for: date)
+            }
         }
     }
 }

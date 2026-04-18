@@ -8,123 +8,183 @@
 import SwiftUI
 
 struct LoggedSetsView: View {
-    
     @EnvironmentObject private var userData: UserData
     @Binding var workout: Workout
-    
+
+    private var normalizedWorkoutName: String {
+        workout.name.normalizedExerciseName
+    }
+
+    private var historyEntries: [LoggedSetHistoryEntry] {
+        var entries = userData.routines.flatMap { routine in
+            routine.workouts
+                .filter { $0.id != workout.id && $0.name.normalizedExerciseName == normalizedWorkoutName }
+                .flatMap { matchingWorkout in
+                    matchingWorkout.loggedSets.map { loggedSet in
+                        LoggedSetHistoryEntry(
+                            source: .routine(workoutID: matchingWorkout.id, loggedSetID: loggedSet.id),
+                            loggedSet: loggedSet,
+                            routineName: routine.name.isEmpty ? routine.weekday : routine.name,
+                            isArchived: routine.isArchived
+                        )
+                    }
+                }
+        }
+
+        entries.append(contentsOf: workout.loggedSets.map { loggedSet in
+            LoggedSetHistoryEntry(
+                source: .current(loggedSetID: loggedSet.id),
+                loggedSet: loggedSet,
+                routineName: "Current workout",
+                isArchived: false
+            )
+        })
+
+        return entries.sorted { $0.loggedSet.loggedOnDate > $1.loggedSet.loggedOnDate }
+    }
+
     var body: some View {
-        
         Form {
-            
-            //  Current Sets Section
             Section {
-                
-                //  if user has no sets recorded
-                if workout.sets.count == 0 {
+                if workout.sets.isEmpty {
                     Text("No current sets.")
                         .italic()
-                }
-                
-                //  if user has sets recorded...
-                else {
-                    List {
-                        ForEach(workout.sets) { s in
-                            Text("\(s.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: s.weight))")
-                        }
+                } else {
+                    ForEach(workout.sets) { set in
+                        Text("\(set.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: set.weight))")
                     }
                 }
             } header: {
                 Text("Current Sets")
                     .font(.subheadline)
             }
-            
-            
-            
-            //  Logged Sets Section
+
             Section {
-                if workout.loggedSets.count == 0 {
+                if historyEntries.isEmpty {
                     Text("No logged sets")
-                }
-            } header: {
-                HStack {
-                    Text("Logged sets")
-                        .font(.subheadline)
-//                    Spacer()
-//                    Button("Log Current Sets") {
-//                        logCurrentSet()
-//                    }
-                }
-            }
-            
-            List {
-                
-                ForEach($workout.loggedSets.sorted(by: {$0.loggedOnDate.wrappedValue > $1.loggedOnDate.wrappedValue})) { $ls in
-                    Section {
-                        VStack(alignment: .leading){
-                            NavigationLink(destination: LoggedSetEditView(loggedSet: $ls)){
-                                Text("**Logged on \(formatDate(date: ls.loggedOnDate))**")
+                } else {
+                    ForEach(historyEntries) { entry in
+                        Section {
+                            VStack(alignment: .leading, spacing: 8) {
+                                if let loggedSetBinding = binding(for: entry.source) {
+                                    NavigationLink(destination: LoggedSetEditView(loggedSet: loggedSetBinding)) {
+                                        Text("**Logged on \(formatDate(date: entry.loggedSet.loggedOnDate))**")
+                                    }
+                                } else {
+                                    Text("**Logged on \(formatDate(date: entry.loggedSet.loggedOnDate))**")
+                                }
+
+                                if !entry.routineName.isEmpty {
+                                    Text(entry.isArchived ? "\(entry.routineName) · Archived" : entry.routineName)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(.secondary)
+                                }
+
+                                ForEach(entry.loggedSet.sets) { set in
+                                    Text("\(set.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: set.weight))")
+                                }
                             }
-                            ForEach(ls.sets) { s in
-                                Text("\(s.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: s.weight))")
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                deleteLoggedSet(entry.source)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }
                 }
-//                .onDelete(perform: deleteLoggedSet)
-                .onDelete{ indexSet in
-                    
-                    // Sort and store the loggedSets in a temporary variable
-                    let sortedLoggedSets = workout.loggedSets.sorted(by: { $0.loggedOnDate < $1.loggedOnDate })
-                    
-                    // Map the indexSet to the indices in the original array
-                    let originalIndices = indexSet.compactMap { index -> Int? in
-                        let element = sortedLoggedSets[index]
-                        return workout.loggedSets.firstIndex(where: { $0.id == element.id })
-                    }
-                    
-                    // Call the delete function with the correct indices
-                    deleteLoggedSet(at: originalIndices)
-                    
+            } header: {
+                Text("Logged sets")
+                    .font(.subheadline)
+            } footer: {
+                Text("History is shared by exercise name, including archived routines.")
+            }
+        }
+        .navigationTitle("\(workout.name) History")
+    }
+
+    private func binding(for source: LoggedSetHistoryEntry.Source) -> Binding<Workout.LoggedSet>? {
+        switch source {
+        case .current(let loggedSetID):
+            guard let loggedSetIndex = workout.loggedSets.firstIndex(where: { $0.id == loggedSetID }) else {
+                return nil
+            }
+
+            return $workout.loggedSets[loggedSetIndex]
+        case .routine(let workoutID, let loggedSetID):
+            guard let routineIndex = userData.routines.firstIndex(where: { routine in
+                routine.workouts.contains(where: { $0.id == workoutID })
+            }),
+                  let workoutIndex = userData.routines[routineIndex].workouts.firstIndex(where: { $0.id == workoutID }),
+                  let loggedSetIndex = userData.routines[routineIndex].workouts[workoutIndex].loggedSets.firstIndex(where: { $0.id == loggedSetID }) else {
+                return nil
+            }
+
+            return Binding(
+                get: {
+                    userData.routines[routineIndex].workouts[workoutIndex].loggedSets[loggedSetIndex]
+                },
+                set: { updatedLoggedSet in
+                    userData.routines[routineIndex].workouts[workoutIndex].loggedSets[loggedSetIndex] = updatedLoggedSet
                 }
-                
-            }
-            
+            )
         }
     }
-    
-//    func deleteLoggedSet(at offsets: IndexSet) {
-//        workout.loggedSets.remove(atOffsets: offsets)
-//    }
-    // In your deleteLoggedSet function, ensure you're deleting from the original data array
-    func deleteLoggedSet(at indices: [IndexSet.Element]) {
-        for index in indices {
-            // Find the item in the original array and delete it
-            // This is just a placeholder logic; implement based on your actual data structure
-            if let originalIndex = workout.loggedSets.firstIndex(where: { $0.id == workout.loggedSets.sorted(by: { $0.loggedOnDate < $1.loggedOnDate })[index].id }) {
-                workout.loggedSets.remove(at: originalIndex)
+
+    private func deleteLoggedSet(_ source: LoggedSetHistoryEntry.Source) {
+        switch source {
+        case .current(let loggedSetID):
+            workout.loggedSets.removeAll { $0.id == loggedSetID }
+        case .routine(let workoutID, let loggedSetID):
+            guard let routineIndex = userData.routines.firstIndex(where: { routine in
+                routine.workouts.contains(where: { $0.id == workoutID })
+            }),
+                  let workoutIndex = userData.routines[routineIndex].workouts.firstIndex(where: { $0.id == workoutID }) else {
+                return
             }
+
+            userData.routines[routineIndex].workouts[workoutIndex].loggedSets.removeAll { $0.id == loggedSetID }
         }
     }
-    
-    func formatDate(date: Date) -> String{
+
+    private func formatDate(date: Date) -> String {
         let df = DateFormatter()
         df.dateStyle = .short
         return df.string(from: date)
     }
-    
-    func logCurrentSet() {
-        let newLoggedSet: Workout.LoggedSet = Workout.LoggedSet(sets: workout.sets, loggedOnDate: Date())
-        workout.loggedSets.append(newLoggedSet)
-        workout.sets = []
+}
+
+private struct LoggedSetHistoryEntry: Identifiable {
+    enum Source: Equatable {
+        case current(loggedSetID: Workout.LoggedSet.ID)
+        case routine(workoutID: Workout.ID, loggedSetID: Workout.LoggedSet.ID)
+    }
+
+    let source: Source
+    let loggedSet: Workout.LoggedSet
+    let routineName: String
+    let isArchived: Bool
+
+    var id: String {
+        switch source {
+        case .current(let loggedSetID):
+            return "current-\(loggedSetID)"
+        case .routine(let workoutID, let loggedSetID):
+            return "\(workoutID)-\(loggedSetID)"
+        }
     }
 }
 
 struct LoggedSetsView_Previews: PreviewProvider {
-    
-//    @State static var loggedSets: [Workout.LoggedSet] = [Workout.LoggedSet(sets: [Workout.Set(reps: 10, weight: 55)], loggedOnDate: Date())]
-    @State static var workout: Workout = Workout(name: "Calf Raises", sets: [Workout.Set(reps: 10, weight: 55), Workout.Set(reps: 10, weight: 55)], loggedSets: [Workout.LoggedSet(sets: [Workout.Set(reps: 10, weight: 55)], loggedOnDate: Date())])
-    
+    @State static var workout: Workout = Workout(
+        name: "Calf Raises",
+        sets: [Workout.Set(reps: 10, weight: 55), Workout.Set(reps: 10, weight: 55)],
+        loggedSets: [Workout.LoggedSet(sets: [Workout.Set(reps: 10, weight: 55)], loggedOnDate: Date())]
+    )
+
     static var previews: some View {
         LoggedSetsView(workout: $workout)
+            .environmentObject(UserData.shared)
     }
 }
