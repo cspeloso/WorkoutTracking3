@@ -438,6 +438,19 @@ enum WeightUnit: String, CaseIterable, Codable, Identifiable {
 // MARK: - Weight Unit Preference
 
 extension UserData {
+    static func hasSavedWeightUnitPreference() -> Bool {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        return store.string(forKey: weightUnitKey) != nil ||
+            UserDefaults.standard.string(forKey: weightUnitKey) != nil
+    }
+
+    func setWeightUnitPreference(_ unit: WeightUnit) {
+        weightUnit = unit
+        saveWeightUnit()
+    }
+
     private static func loadWeightUnit() -> WeightUnit {
         let store = NSUbiquitousKeyValueStore.default
         store.synchronize()

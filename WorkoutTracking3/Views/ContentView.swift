@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("HasCompletedWeightUnitPrompt") private var hasCompletedWeightUnitPrompt = false
+    @State private var showWeightUnitPrompt = false
+
     var body: some View {
         TabView {
             NavigationView { HomeView() }
@@ -24,6 +27,32 @@ struct ContentView: View {
         }
         .accentColor(AppColors.accent)
         .environmentObject(UserData.shared)
+        .onAppear {
+            AppReviewRequester.recordAppLaunch()
+
+            guard !hasCompletedWeightUnitPrompt else {
+                return
+            }
+
+            if UserData.hasSavedWeightUnitPreference() {
+                hasCompletedWeightUnitPrompt = true
+            } else {
+                showWeightUnitPrompt = true
+            }
+        }
+        .alert("Choose your weight unit", isPresented: $showWeightUnitPrompt) {
+            Button("Pounds (lb)") {
+                UserData.shared.setWeightUnitPreference(.pounds)
+                hasCompletedWeightUnitPrompt = true
+            }
+
+            Button("Kilograms (kg)") {
+                UserData.shared.setWeightUnitPreference(.kilograms)
+                hasCompletedWeightUnitPrompt = true
+            }
+        } message: {
+            Text("Which unit would you like to use for logging sets? You can change this later in Settings.")
+        }
     }
 }
 
@@ -232,21 +261,30 @@ struct ProgressDashboardView: View {
                         .font(.system(size: 42, weight: .black, design: .rounded))
                         .padding(.top, 28)
 
-                    HStack(spacing: 0) {
-                        SummaryMetric(value: "\(stats.setCount)", label: "Sets")
-                        Divider().background(AppColors.border)
-                        SummaryMetric(value: "\(stats.exerciseCount)", label: "Exercises")
-                        Divider().background(AppColors.border)
-                        SummaryMetric(value: "\(stats.setsThisWeek)", label: "This Week")
-                    }
-                    .frame(height: 92)
-                    .background(AppColors.card)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
-                    .cornerRadius(8)
+                    VStack(alignment: .leading, spacing: 14) {
+                        SectionTitle("Lifetime Stats")
 
-                    HStack(spacing: 12) {
-                        ProgressPill(title: "Personal Records", systemImage: "trophy.fill", isActive: true)
-                        ProgressPill(title: "History", systemImage: "clock.fill", isActive: false)
+                        VStack(spacing: 12) {
+                            HStack(spacing: 12) {
+                                SummaryMetric(
+                                    value: "\(stats.weightIncreaseCount)",
+                                    label: "Weight Increases",
+                                    systemImage: "arrow.up.circle.fill"
+                                )
+
+                                SummaryMetric(
+                                    value: "\(stats.trackedExerciseCount)",
+                                    label: "Exercises Tracked",
+                                    systemImage: "figure.strengthtraining.traditional"
+                                )
+                            }
+
+                            SummaryMetric(
+                                value: "\(stats.setsThisWeek)",
+                                label: "Sets Logged This Week",
+                                systemImage: "calendar.badge.checkmark"
+                            )
+                        }
                     }
 
                     Picker("Metric", selection: $selectedMetric) {
@@ -262,13 +300,14 @@ struct ProgressDashboardView: View {
                         ProgressLineChart(
                             points: progressPoints,
                             metric: selectedMetric,
+                            weightUnit: userData.weightUnit,
                             emptyText: "Complete workout logs to build your progress chart."
                         )
                     }
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Top \(selectedMetric.title)")
-                        ProgressBarChart(records: Array(filteredRecords.prefix(8)), metric: selectedMetric)
+                        ProgressBarChart(records: Array(filteredRecords.prefix(8)), metric: selectedMetric, weightUnit: userData.weightUnit)
                     }
 
                     VStack(spacing: 14) {
@@ -276,7 +315,7 @@ struct ProgressDashboardView: View {
                             EmptyRecordsCard()
                         } else {
                             ForEach(filteredRecords.prefix(25)) { record in
-                                PersonalRecordCard(record: record)
+                                PersonalRecordCard(record: record, weightUnit: userData.weightUnit)
                             }
                         }
                     }
@@ -455,32 +494,45 @@ struct EmptyTodayCard: View {
 struct SummaryMetric: View {
     let value: String
     let label: String
+    let systemImage: String?
+
+    init(value: String, label: String, systemImage: String? = nil) {
+        self.value = value
+        self.label = label
+        self.systemImage = systemImage
+    }
 
     var body: some View {
-        VStack(spacing: 8) {
-            Text(value)
-                .font(.system(size: 30, weight: .black, design: .rounded))
-            Text(label)
-                .font(.subheadline.weight(.bold))
-                .foregroundColor(.secondary)
+        HStack(spacing: 12) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.headline.weight(.black))
+                    .foregroundColor(AppColors.accent)
+                    .frame(width: 34, height: 34)
+                    .background(AppColors.elevated)
+                    .cornerRadius(8)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(value)
+                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                Text(label)
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-struct ProgressPill: View {
-    let title: String
-    let systemImage: String
-    let isActive: Bool
-
-    var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.subheadline.weight(.black))
-            .foregroundColor(isActive ? .primary : .secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 15)
-            .background(isActive ? AppColors.elevated : AppColors.card.opacity(0.55))
-            .cornerRadius(8)
+        .padding(14)
+        .background(AppColors.card)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
     }
 }
 
@@ -519,28 +571,36 @@ enum ProgressMetric: String, CaseIterable, Identifiable {
     }
 
     func formattedValue(for record: ExerciseRecord) -> String {
+        formattedValue(for: record, weightUnit: UserData.shared.weightUnit)
+    }
+
+    func formattedValue(for record: ExerciseRecord, weightUnit: WeightUnit) -> String {
         switch self {
         case .maxWeight:
-            return UserData.shared.weightUnit.formattedWeight(fromStoredPounds: record.maxWeight)
+            return weightUnit.formattedWeight(fromStoredPounds: record.maxWeight)
         case .estimatedOneRepMax:
-            return UserData.shared.weightUnit.formattedWeight(fromStoredPounds: record.estimatedOneRepMax)
+            return weightUnit.formattedWeight(fromStoredPounds: record.estimatedOneRepMax)
         case .maxReps:
             return "\(record.maxReps)"
         case .bestVolume:
-            return UserData.shared.weightUnit.formattedVolume(fromStoredPoundVolume: record.bestVolume)
+            return weightUnit.formattedVolume(fromStoredPoundVolume: record.bestVolume)
         }
     }
 
     func formattedRawValue(_ value: Double) -> String {
+        formattedRawValue(value, weightUnit: UserData.shared.weightUnit)
+    }
+
+    func formattedRawValue(_ value: Double, weightUnit: WeightUnit) -> String {
         switch self {
         case .maxWeight:
-            return UserData.shared.weightUnit.formattedWeight(fromStoredPounds: value)
+            return weightUnit.formattedWeight(fromStoredPounds: value)
         case .estimatedOneRepMax:
-            return UserData.shared.weightUnit.formattedWeight(fromStoredPounds: value)
+            return weightUnit.formattedWeight(fromStoredPounds: value)
         case .maxReps:
             return "\(Int(value)) reps"
         case .bestVolume:
-            return UserData.shared.weightUnit.formattedVolume(fromStoredPoundVolume: value)
+            return weightUnit.formattedVolume(fromStoredPoundVolume: value)
         }
     }
 }
@@ -618,6 +678,7 @@ struct ProgressPoint: Identifiable, Equatable {
 struct ProgressLineChart: View {
     let points: [ProgressPoint]
     let metric: ProgressMetric
+    let weightUnit: WeightUnit
     let emptyText: String
     @State private var selectedPoint: ProgressPoint?
 
@@ -681,18 +742,13 @@ struct ProgressLineChart: View {
                 HStack(spacing: 12) {
                     ChartSummaryValue(
                         label: "Latest",
-                        value: metric.formattedRawValue(latestPoint?.value ?? 0),
+                        value: metric.formattedRawValue(latestPoint?.value ?? 0, weightUnit: weightUnit),
                         color: AppColors.accent
                     )
                     ChartSummaryValue(
                         label: "Best",
-                        value: metric.formattedRawValue(bestPoint?.value ?? 0),
+                        value: metric.formattedRawValue(bestPoint?.value ?? 0, weightUnit: weightUnit),
                         color: AppColors.accent
-                    )
-                    ChartSummaryValue(
-                        label: "Points",
-                        value: "\(sortedPoints.count)",
-                        color: .primary
                     )
                 }
 
@@ -708,9 +764,9 @@ struct ProgressLineChart: View {
                         }
 
                         VStack {
-                            Text(metric.formattedRawValue(chartBounds.upper))
+                            Text(metric.formattedRawValue(chartBounds.upper, weightUnit: weightUnit))
                             Spacer()
-                            Text(metric.formattedRawValue(chartBounds.lower))
+                            Text(metric.formattedRawValue(chartBounds.lower, weightUnit: weightUnit))
                         }
                         .font(.caption2.weight(.bold))
                         .foregroundColor(.secondary.opacity(0.8))
@@ -779,7 +835,7 @@ struct ProgressLineChart: View {
                             let selectedLocation = chartLocation(for: selectedPoint, size: proxy.size)
 
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(metric.formattedRawValue(selectedPoint.value))
+                                Text(metric.formattedRawValue(selectedPoint.value, weightUnit: weightUnit))
                                     .font(.caption.weight(.black))
                                     .foregroundColor(AppColors.accent)
                                 Text(shortDate(selectedPoint.date))
@@ -903,6 +959,7 @@ struct ChartSummaryValue: View {
 struct ProgressBarChart: View {
     let records: [ExerciseRecord]
     let metric: ProgressMetric
+    let weightUnit: WeightUnit
 
     private var maxValue: Double {
         records.map { metric.value(for: $0) }.max() ?? 0
@@ -923,7 +980,7 @@ struct ProgressBarChart: View {
                                 .font(.caption.weight(.bold))
                                 .lineLimit(1)
                             Spacer()
-                            Text(metric.formattedValue(for: record))
+                            Text(metric.formattedValue(for: record, weightUnit: weightUnit))
                                 .font(.caption.weight(.black))
                                 .foregroundColor(AppColors.accent)
                         }
@@ -959,6 +1016,7 @@ struct ProgressBarChart: View {
 
 struct PersonalRecordCard: View {
     let record: ExerciseRecord
+    let weightUnit: WeightUnit
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -972,8 +1030,8 @@ struct PersonalRecordCard: View {
             }
 
             HStack {
-                RecordMetric(systemImage: "dumbbell.fill", color: AppColors.accent, value: UserData.shared.weightUnit.formattedWeight(fromStoredPounds: record.maxWeight), label: "Max Weight")
-                RecordMetric(systemImage: "chart.line.uptrend.xyaxis", color: AppColors.accent, value: UserData.shared.weightUnit.formattedWeight(fromStoredPounds: record.estimatedOneRepMax), label: "Est. 1RM")
+                RecordMetric(systemImage: "dumbbell.fill", color: AppColors.accent, value: weightUnit.formattedWeight(fromStoredPounds: record.maxWeight), label: "Max Weight")
+                RecordMetric(systemImage: "chart.line.uptrend.xyaxis", color: AppColors.accent, value: weightUnit.formattedWeight(fromStoredPounds: record.estimatedOneRepMax), label: "Est. 1RM")
                 RecordMetric(systemImage: "arrow.left.arrow.right", color: AppColors.accent, value: "\(record.maxReps)", label: "Max Reps")
             }
         }
@@ -1027,8 +1085,10 @@ struct EmptyRecordsCard: View {
 struct TrainingStats {
     let routineCount: Int
     let exerciseCount: Int
+    let trackedExerciseCount: Int
     let setCount: Int
     let setsThisWeek: Int
+    let weightIncreaseCount: Int
     let totalVolume: Double
     let personalRecords: [ExerciseRecord]
 
@@ -1069,6 +1129,7 @@ struct TrainingStats {
         }
 
         exerciseCount = exerciseNames.count
+        trackedExerciseCount = Set(allSets.map { $0.name.normalizedExerciseName }.filter { !$0.isEmpty }).count
         setCount = allSets.count
         totalVolume = allSets.reduce(0) { $0 + ($1.set.weight * Double($1.set.reps)) }
         let calendar = Calendar.current
@@ -1080,6 +1141,7 @@ struct TrainingStats {
 
             return item.date >= weekInterval.start && item.date < weekInterval.end
         }.count
+        weightIncreaseCount = Self.countWeightIncreases(from: allSets)
         personalRecords = recordsByName.values.sorted {
             if $0.estimatedOneRepMax == $1.estimatedOneRepMax {
                 return $0.name < $1.name
@@ -1087,6 +1149,35 @@ struct TrainingStats {
 
             return $0.estimatedOneRepMax > $1.estimatedOneRepMax
         }
+    }
+
+    private static func countWeightIncreases(from sets: [(name: String, set: Workout.Set, date: Date)]) -> Int {
+        var bestWeightByExercise: [String: Double] = [:]
+        var increaseCount = 0
+
+        let orderedSets = sets.sorted {
+            if $0.date == $1.date {
+                return $0.name < $1.name
+            }
+
+            return $0.date < $1.date
+        }
+
+        for item in orderedSets {
+            let normalizedName = item.name.normalizedExerciseName
+            guard !normalizedName.isEmpty else {
+                continue
+            }
+
+            let previousBest = bestWeightByExercise[normalizedName]
+            if let previousBest, item.set.weight > previousBest {
+                increaseCount += 1
+            }
+
+            bestWeightByExercise[normalizedName] = max(previousBest ?? item.set.weight, item.set.weight)
+        }
+
+        return increaseCount
     }
 
     var compactVolume: String {

@@ -119,6 +119,7 @@ struct WorkoutDetailsView: View {
                         ProgressLineChart(
                             points: workoutProgressPoints,
                             metric: .maxWeight,
+                            weightUnit: userData.weightUnit,
                             emptyText: "Complete workout logs to see weight progress over time."
                         )
                     }
@@ -222,6 +223,7 @@ struct WorkoutDetailsView: View {
         workout.loggedSets = workout.loggedSets + [newLoggedSet]
         workout.sets = []
         visibleSets = []
+        AppReviewRequester.recordCompletedWorkoutAndRequestIfAppropriate()
     }
 }
 

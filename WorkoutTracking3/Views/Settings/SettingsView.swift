@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import StoreKit
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
@@ -18,6 +19,12 @@ struct SettingsView: View {
     @State private var importError: String?
     @State private var showDeleteAllConfirmation = false
     @State private var showRestoreConfirmation = false
+    @State private var showFeedbackFallback = false
+    private let feedbackEmail = "chrispeloso2@gmail.com"
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
+    }
     
     var body: some View {
         ZStack {
@@ -32,9 +39,30 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("About")
                         SettingsInfoCard(rows: [
-                            SettingsInfoRow(title: "Version", value: "1.0.0"),
+                            SettingsInfoRow(title: "Version", value: appVersion),
                             SettingsInfoRow(title: "App Name", value: "Work It Out")
                         ])
+                    }
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        SectionTitle("Feedback")
+                        VStack(spacing: 12) {
+                            SettingsActionButton(
+                                title: "Send feedback",
+                                subtitle: "Share an idea, bug, or anything that feels off.",
+                                systemImage: "bubble.left.and.bubble.right.fill"
+                            ) {
+                                sendFeedback()
+                            }
+
+                            SettingsActionButton(
+                                title: "Leave a review",
+                                subtitle: "Rate Work It Out in the App Store.",
+                                systemImage: "star.bubble.fill"
+                            ) {
+                                requestAppReview()
+                            }
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 14) {
@@ -126,6 +154,14 @@ struct SettingsView: View {
         } message: {
             Text("This replaces your current app data with the most recently deleted data backup.")
         }
+        .alert("Unable to open email", isPresented: $showFeedbackFallback) {
+            Button("Copy Email") {
+                UIPasteboard.general.string = feedbackEmail
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Send feedback to \(feedbackEmail).")
+        }
         .fileImporter(
             isPresented: $isFileImporterPresented,
             allowedContentTypes: [UTType.json],
@@ -170,6 +206,31 @@ struct SettingsView: View {
                 importError = "Error: Failed to import file."
             }
         }
+    }
+
+    private func sendFeedback() {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = feedbackEmail
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "Work It Out Feedback"),
+            URLQueryItem(name: "body", value: "\n\nApp Version: \(appVersion)")
+        ]
+
+        guard let url = components.url else {
+            showFeedbackFallback = true
+            return
+        }
+
+        UIApplication.shared.open(url) { didOpen in
+            if !didOpen {
+                showFeedbackFallback = true
+            }
+        }
+    }
+
+    private func requestAppReview() {
+        AppReviewRequester.requestReviewNow()
     }
 
     private func exportData() {
@@ -320,5 +381,82 @@ private struct TipCard: View {
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
+    }
+}
+
+enum AppReviewRequester {
+    private static let firstLaunchDateKey = "AppReviewFirstLaunchDate"
+    private static let completedWorkoutLogsKey = "AppReviewCompletedWorkoutLogs"
+    private static let lastPromptDateKey = "AppReviewLastPromptDate"
+    private static let promptedVersionKey = "AppReviewPromptedVersion"
+
+    private static let minimumCompletedWorkoutLogs = 3
+    private static let minimumDaysSinceFirstLaunch = 3
+    private static let minimumDaysBetweenPrompts = 90
+
+    static func recordAppLaunch() {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: firstLaunchDateKey) == nil {
+            defaults.set(Date(), forKey: firstLaunchDateKey)
+        }
+    }
+
+    static func recordCompletedWorkoutAndRequestIfAppropriate() {
+        recordAppLaunch()
+
+        let defaults = UserDefaults.standard
+        let completedLogs = defaults.integer(forKey: completedWorkoutLogsKey) + 1
+        defaults.set(completedLogs, forKey: completedWorkoutLogsKey)
+
+        guard shouldRequestReview(completedLogs: completedLogs) else {
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            requestReviewNow()
+            defaults.set(Date(), forKey: lastPromptDateKey)
+            defaults.set(appVersion, forKey: promptedVersionKey)
+        }
+    }
+
+    static func requestReviewNow() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }) else {
+            return
+        }
+
+        SKStoreReviewController.requestReview(in: scene)
+    }
+
+    private static func shouldRequestReview(completedLogs: Int) -> Bool {
+        let defaults = UserDefaults.standard
+        guard completedLogs >= minimumCompletedWorkoutLogs else {
+            return false
+        }
+
+        if let firstLaunchDate = defaults.object(forKey: firstLaunchDateKey) as? Date {
+            let daysSinceFirstLaunch = Calendar.current.dateComponents([.day], from: firstLaunchDate, to: Date()).day ?? 0
+            guard daysSinceFirstLaunch >= minimumDaysSinceFirstLaunch else {
+                return false
+            }
+        }
+
+        if defaults.string(forKey: promptedVersionKey) == appVersion {
+            return false
+        }
+
+        if let lastPromptDate = defaults.object(forKey: lastPromptDateKey) as? Date {
+            let daysSinceLastPrompt = Calendar.current.dateComponents([.day], from: lastPromptDate, to: Date()).day ?? 0
+            guard daysSinceLastPrompt >= minimumDaysBetweenPrompts else {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    private static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
     }
 }
