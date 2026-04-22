@@ -24,6 +24,8 @@ final class UserData: NSObject, ObservableObject, Codable {
     private static let deletedRoutinesBackupRetention: TimeInterval = 30 * 24 * 60 * 60
 
     private var saveTask: DispatchWorkItem?
+    private let persistenceQueue = DispatchQueue(label: "com.workitout.userdata.persistence", qos: .utility)
+    private let watchSyncQueue = DispatchQueue(label: "com.workitout.userdata.watchsync", qos: .utility)
     private var isApplyingRemoteUpdate = false
     private var isApplyingRemoteSettingsUpdate = false
     private var lastUpdatedAt: TimeInterval = 0
@@ -103,9 +105,21 @@ final class UserData: NSObject, ObservableObject, Codable {
     }
 
     func save() {
-        saveToLocalDefaults()
-        saveToCloud()
-        sendToPairedDevice()
+        if lastUpdatedAt <= 0 {
+            lastUpdatedAt = Date().timeIntervalSince1970
+        }
+
+        let routinesSnapshot = routines
+        let updatedAtSnapshot = lastUpdatedAt
+        let weightUnitSnapshot = weightUnit
+
+        saveToLocalDefaults(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
+        saveToCloud(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
+        sendToPairedDevice(
+            routines: routinesSnapshot,
+            updatedAt: updatedAtSnapshot,
+            weightUnit: weightUnitSnapshot
+        )
     }
 
     func deleteAllDataKeepingRestoreBackup() {
@@ -132,30 +146,36 @@ final class UserData: NSObject, ObservableObject, Codable {
     }
 
     func saveToCloud() {
+        if lastUpdatedAt <= 0 {
+            lastUpdatedAt = Date().timeIntervalSince1970
+        }
+
+        saveToCloud(routines: routines, updatedAt: lastUpdatedAt)
+    }
+
+    private func saveToCloud(routines routinesSnapshot: [Routine], updatedAt updatedAtSnapshot: TimeInterval) {
         saveTask?.cancel()
 
         let task = DispatchWorkItem {
-            do {
-                if self.lastUpdatedAt <= 0 {
-                    self.lastUpdatedAt = Date().timeIntervalSince1970
-                }
+            self.persistenceQueue.async {
+                do {
+                    let encoded = try JSONEncoder().encode(routinesSnapshot)
+                    let store = NSUbiquitousKeyValueStore.default
+                    store.set(encoded, forKey: Self.routinesCloudKey)
+                    store.set(updatedAtSnapshot, forKey: Self.routinesUpdatedAtKey)
+                    store.synchronize()
+                    self.saveToLocalDefaults(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
 
-                let encoded = try JSONEncoder().encode(self.routines)
-                let store = NSUbiquitousKeyValueStore.default
-                store.set(encoded, forKey: Self.routinesCloudKey)
-                store.set(self.lastUpdatedAt, forKey: Self.routinesUpdatedAtKey)
-                store.synchronize()
-                self.saveToLocalDefaults()
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    if let data = store.data(forKey: Self.routinesCloudKey) {
-                        print("Saved user data to iCloud. Data size: \(data.count) bytes")
-                    } else {
-                        print("iCloud did not return saved user data")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        if let data = store.data(forKey: Self.routinesCloudKey) {
+                            print("Saved user data to iCloud. Data size: \(data.count) bytes")
+                        } else {
+                            print("iCloud did not return saved user data")
+                        }
                     }
+                } catch {
+                    print("Failed to encode routines: \(error.localizedDescription)")
                 }
-            } catch {
-                print("Failed to encode routines: \(error.localizedDescription)")
             }
         }
 
@@ -164,16 +184,22 @@ final class UserData: NSObject, ObservableObject, Codable {
     }
 
     private func saveToLocalDefaults() {
-        do {
-            if lastUpdatedAt <= 0 {
-                lastUpdatedAt = Date().timeIntervalSince1970
-            }
+        if lastUpdatedAt <= 0 {
+            lastUpdatedAt = Date().timeIntervalSince1970
+        }
 
-            let encoded = try JSONEncoder().encode(routines)
-            UserDefaults.standard.set(encoded, forKey: Self.legacyLocalKey)
-            UserDefaults.standard.set(lastUpdatedAt, forKey: Self.routinesUpdatedAtKey)
-        } catch {
-            print("Failed to encode local routines backup: \(error.localizedDescription)")
+        saveToLocalDefaults(routines: routines, updatedAt: lastUpdatedAt)
+    }
+
+    private func saveToLocalDefaults(routines routinesSnapshot: [Routine], updatedAt updatedAtSnapshot: TimeInterval) {
+        persistenceQueue.async {
+            do {
+                let encoded = try JSONEncoder().encode(routinesSnapshot)
+                UserDefaults.standard.set(encoded, forKey: Self.legacyLocalKey)
+                UserDefaults.standard.set(updatedAtSnapshot, forKey: Self.routinesUpdatedAtKey)
+            } catch {
+                print("Failed to encode local routines backup: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -655,31 +681,37 @@ extension UserData: WCSessionDelegate {
     }
 
     private func sendToPairedDevice() {
+        sendToPairedDevice(routines: routines, updatedAt: lastUpdatedAt, weightUnit: weightUnit)
+    }
+
+    private func sendToPairedDevice(routines routinesSnapshot: [Routine], updatedAt updatedAtSnapshot: TimeInterval, weightUnit weightUnitSnapshot: WeightUnit) {
         guard let session else {
             return
         }
 
-        do {
-            let encoded = try JSONEncoder().encode(routines)
-            let payload: [String: Any] = [
-                Self.watchConnectivityRoutinesKey: encoded,
-                Self.watchConnectivityUpdatedAtKey: lastUpdatedAt,
-                Self.watchConnectivityWeightUnitKey: weightUnit.rawValue
-            ]
+        watchSyncQueue.async {
+            do {
+                let encoded = try JSONEncoder().encode(routinesSnapshot)
+                let payload: [String: Any] = [
+                    Self.watchConnectivityRoutinesKey: encoded,
+                    Self.watchConnectivityUpdatedAtKey: updatedAtSnapshot,
+                    Self.watchConnectivityWeightUnitKey: weightUnitSnapshot.rawValue
+                ]
 
-            if session.activationState == .activated {
-                try? session.updateApplicationContext(payload)
+                if session.activationState == .activated {
+                    try? session.updateApplicationContext(payload)
 
-                if session.isReachable {
-                    session.sendMessage(payload, replyHandler: nil) { error in
-                        print("Could not send live user data update: \(error.localizedDescription)")
+                    if session.isReachable {
+                        session.sendMessage(payload, replyHandler: nil) { error in
+                            print("Could not send live user data update: \(error.localizedDescription)")
+                        }
+                    } else {
+                        session.transferUserInfo(payload)
                     }
-                } else {
-                    session.transferUserInfo(payload)
                 }
+            } catch {
+                print("Failed to encode routines for WatchConnectivity: \(error.localizedDescription)")
             }
-        } catch {
-            print("Failed to encode routines for WatchConnectivity: \(error.localizedDescription)")
         }
     }
 

@@ -801,10 +801,19 @@ struct ProgressLineChart: View {
     let metric: ProgressMetric
     let weightUnit: WeightUnit
     let emptyText: String
+    var currentPoint: ProgressPoint? = nil
     @State private var selectedPoint: ProgressPoint?
 
     private var sortedPoints: [ProgressPoint] {
-        points.sorted { $0.date < $1.date }
+        chartPoints.sorted { $0.date < $1.date }
+    }
+
+    private var chartPoints: [ProgressPoint] {
+        guard let currentPoint else {
+            return points
+        }
+
+        return points + [currentPoint]
     }
 
     private var maxValue: Double {
@@ -836,7 +845,7 @@ struct ProgressLineChart: View {
         }
 
         var uniquePoints: [ProgressPoint] = []
-        let candidates = [sortedPoints.first, bestPoint, sortedPoints.last].compactMap { $0 }
+        let candidates = [sortedPoints.first, bestPoint, sortedPoints.last, currentPoint].compactMap { $0 }
         for point in candidates where !uniquePoints.contains(where: { Calendar.current.isDate($0.date, inSameDayAs: point.date) }) {
             uniquePoints.append(point)
         }
@@ -946,10 +955,24 @@ struct ProgressLineChart: View {
 
                         ForEach(visiblePoints) { point in
                             Circle()
-                                .fill(AppColors.accent)
+                                .fill(isCurrentPoint(point) ? AppColors.success : AppColors.accent)
                                 .overlay(Circle().stroke(AppColors.card, lineWidth: 2))
                                 .frame(width: pointSize(for: point), height: pointSize(for: point))
                                 .position(chartLocation(for: point, size: proxy.size))
+                        }
+
+                        if let currentPoint {
+                            let currentLocation = chartLocation(for: currentPoint, size: proxy.size)
+
+                            Text("Current")
+                                .font(.caption2.weight(.black))
+                                .foregroundColor(AppColors.success)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(AppColors.card.opacity(0.92))
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.success.opacity(0.45)))
+                                .cornerRadius(8)
+                                .position(currentLabelLocation(for: currentLocation, in: proxy.size))
                         }
 
                         if let selectedPoint {
@@ -958,8 +981,8 @@ struct ProgressLineChart: View {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(metric.formattedRawValue(selectedPoint.value, weightUnit: weightUnit))
                                     .font(.caption.weight(.black))
-                                    .foregroundColor(AppColors.accent)
-                                Text(shortDate(selectedPoint.date))
+                                    .foregroundColor(isCurrentPoint(selectedPoint) ? AppColors.success : AppColors.accent)
+                                Text(isCurrentPoint(selectedPoint) ? "Current" : shortDate(selectedPoint.date))
                                     .font(.caption2.weight(.bold))
                                     .foregroundColor(.secondary)
                             }
@@ -1034,7 +1057,15 @@ struct ProgressLineChart: View {
             return 12
         }
 
+        if isCurrentPoint(point) {
+            return 10
+        }
+
         return selectedPoint == nil && sortedPoints.count > 45 ? 9 : 6
+    }
+
+    private func isCurrentPoint(_ point: ProgressPoint) -> Bool {
+        currentPoint == point
     }
 
     private func calloutLocation(for pointLocation: CGPoint, in size: CGSize) -> CGPoint {
@@ -1044,6 +1075,16 @@ struct ProgressLineChart: View {
         let preferredY = pointLocation.y - 42
         let y = preferredY < calloutHeight / 2 ? pointLocation.y + 42 : preferredY
         return CGPoint(x: x, y: min(max(y, calloutHeight / 2), size.height - (calloutHeight / 2)))
+    }
+
+    private func currentLabelLocation(for pointLocation: CGPoint, in size: CGSize) -> CGPoint {
+        let labelWidth: CGFloat = 62
+        let labelHeight: CGFloat = 24
+        let xOffset: CGFloat = pointLocation.x > size.width - 92 ? -44 : 44
+        let yOffset: CGFloat = pointLocation.y < 46 ? 28 : -28
+        let x = min(max(pointLocation.x + xOffset, labelWidth / 2), size.width - (labelWidth / 2))
+        let y = min(max(pointLocation.y + yOffset, labelHeight / 2), size.height - (labelHeight / 2))
+        return CGPoint(x: x, y: min(max(y, labelHeight / 2), size.height - (labelHeight / 2)))
     }
 
     private func shortDate(_ date: Date?) -> String {

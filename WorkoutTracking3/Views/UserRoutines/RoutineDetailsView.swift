@@ -91,7 +91,7 @@ struct RoutineDetailsView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        ForEach(routine.workouts.indices, id: \.self) { index in
+                        ForEach(Array(displayedWorkoutIndices.enumerated()), id: \.element) { displayIndex, index in
                             Button {
                                 presentedWorkoutRoute = WorkoutPresentationRoute(
                                     routineID: routine.id,
@@ -100,7 +100,7 @@ struct RoutineDetailsView: View {
                             } label: {
                                 WorkoutCard(
                                     workout: routine.workouts[index],
-                                    index: index + 1,
+                                    index: displayIndex + 1,
                                     loggedCount: loggedSetCount(for: routine.workouts[index])
                                 )
                             }
@@ -201,7 +201,22 @@ struct RoutineDetailsView: View {
         routine.workouts.remove(atOffsets: offsets)
     }
     func moveWorkout(from source: IndexSet, to destination: Int){
-        routine.workouts.move(fromOffsets: source, toOffset: destination)
+        var orderedWorkouts = displayedWorkoutIndices.map { routine.workouts[$0] }
+        orderedWorkouts.move(fromOffsets: source, toOffset: destination)
+        routine.workouts = orderedWorkouts
+    }
+
+    private var displayedWorkoutIndices: [Int] {
+        routine.workouts.indices.sorted { lhs, rhs in
+            let lhsIsInProgress = !routine.workouts[lhs].sets.isEmpty
+            let rhsIsInProgress = !routine.workouts[rhs].sets.isEmpty
+
+            if lhsIsInProgress != rhsIsInProgress {
+                return lhsIsInProgress && !rhsIsInProgress
+            }
+
+            return lhs < rhs
+        }
     }
 
     private func loggedSetCount(for workout: Workout) -> Int {
@@ -241,6 +256,7 @@ private struct WorkoutPresentationRoute: Identifiable {
 
 private struct WorkoutDetailsRoute: View {
     @EnvironmentObject private var userData: UserData
+    @Environment(\.presentationMode) private var presentationMode
     let routineID: Routine.ID
     let workoutID: Workout.ID
     @State private var workout: Workout
@@ -259,6 +275,21 @@ private struct WorkoutDetailsRoute: View {
         WorkoutDetailsView(workout: workoutBinding)
             .onAppear {
                 refreshWorkoutIfNeeded()
+            }
+            .contentShape(Rectangle())
+            .gesture(edgeSwipeDismissGesture)
+    }
+
+    private var edgeSwipeDismissGesture: some Gesture {
+        DragGesture(minimumDistance: 24, coordinateSpace: .local)
+            .onEnded { value in
+                guard value.startLocation.x < 32,
+                      value.translation.width > 90,
+                      abs(value.translation.height) < 80 else {
+                    return
+                }
+
+                presentationMode.wrappedValue.dismiss()
             }
     }
 

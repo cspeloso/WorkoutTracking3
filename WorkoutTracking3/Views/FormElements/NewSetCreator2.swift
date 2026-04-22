@@ -101,7 +101,7 @@ struct NewSetCreator2: View {
             Button {
                 addSet()
             } label: {
-                Label("Log Set", systemImage: "checkmark.circle.fill")
+                Label("Add Set", systemImage: "checkmark.circle.fill")
                     .font(.headline.weight(.black))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 17)

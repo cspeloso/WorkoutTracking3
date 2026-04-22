@@ -16,6 +16,8 @@ struct WorkoutDetailsView: View {
     @State private var visibleSets: [Workout.Set] = []
     @State private var haptic = UIImpactFeedbackGenerator(style: .heavy)
     @State private var selectedProgressRange: ProgressRange = .oneMonth
+    @State private var cachedMatchingLoggedSets: [Workout.LoggedSet] = []
+    @State private var cachedProgressPoints: [ProgressPoint] = []
 
     private var suggestedSet: Workout.Set {
         if let currentSet = visibleSets.last {
@@ -33,30 +35,16 @@ struct WorkoutDetailsView: View {
         return Workout.Set(reps: 10, weight: 0)
     }
 
-    private var matchingLoggedSets: [Workout.LoggedSet] {
-        let normalizedWorkoutName = workout.name.normalizedExerciseName
-        var loggedSets = userData.routines
-            .flatMap(\.workouts)
-            .filter { $0.id != workout.id && $0.name.normalizedExerciseName == normalizedWorkoutName }
-            .flatMap(\.loggedSets)
-
-        loggedSets.append(contentsOf: workout.loggedSets)
-        return loggedSets.sorted { $0.loggedOnDate > $1.loggedOnDate }
-    }
-
     private var mostRecentMatchingLoggedSet: Workout.LoggedSet? {
-        matchingLoggedSets.first
+        cachedMatchingLoggedSets.first
     }
 
-    private var workoutProgressPoints: [ProgressPoint] {
-        ProgressDataBuilder.points(
-            forWorkoutName: workout.name,
-            in: userData.routines,
-            metric: .maxWeight,
-            range: selectedProgressRange,
-            includeActiveSets: false,
-            currentWorkout: workout
-        )
+    private var currentProgressPoint: ProgressPoint? {
+        guard let maxWeight = visibleSets.map(\.weight).max(), maxWeight > 0 else {
+            return nil
+        }
+
+        return ProgressPoint(date: Date(), value: maxWeight)
     }
 
     var body: some View {
@@ -116,7 +104,7 @@ struct WorkoutDetailsView: View {
                         haptic.impactOccurred()
                         haptic.prepare()
                     } label: {
-                        Label("Complete Log", systemImage: "checkmark.circle.fill")
+                        Label("Log Set", systemImage: "checkmark.circle.fill")
                             .font(.headline.weight(.black))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -164,10 +152,11 @@ struct WorkoutDetailsView: View {
                         SectionTitle("Weight Progress")
                         ProgressRangeControls(selectedRange: $selectedProgressRange)
                         ProgressLineChart(
-                            points: workoutProgressPoints,
+                            points: cachedProgressPoints,
                             metric: .maxWeight,
                             weightUnit: userData.weightUnit,
-                            emptyText: "Complete workout logs to see weight progress over time."
+                            emptyText: "Complete workout logs to see weight progress over time.",
+                            currentPoint: currentProgressPoint
                         )
                     }
                 }
@@ -186,12 +175,19 @@ struct WorkoutDetailsView: View {
         }
         .onAppear {
             visibleSets = workout.sets
+            refreshCachedWorkoutData()
             haptic.prepare()
         }
         .onChange(of: workout.sets) { newSets in
             if visibleSets != newSets {
                 visibleSets = newSets
             }
+        }
+        .onChange(of: workout.loggedSets) { _ in
+            refreshCachedWorkoutData()
+        }
+        .onChange(of: selectedProgressRange) { _ in
+            cachedProgressPoints = makeWorkoutProgressPoints()
         }
     }
 
@@ -223,7 +219,35 @@ struct WorkoutDetailsView: View {
         workout.loggedSets = workout.loggedSets + [newLoggedSet]
         workout.sets = []
         visibleSets = []
+        refreshCachedWorkoutData()
         AppReviewRequester.recordCompletedWorkoutAndRequestIfAppropriate()
+    }
+
+    private func refreshCachedWorkoutData() {
+        cachedMatchingLoggedSets = makeMatchingLoggedSets()
+        cachedProgressPoints = makeWorkoutProgressPoints()
+    }
+
+    private func makeMatchingLoggedSets() -> [Workout.LoggedSet] {
+        let normalizedWorkoutName = workout.name.normalizedExerciseName
+        var loggedSets = userData.routines
+            .flatMap(\.workouts)
+            .filter { $0.id != workout.id && $0.name.normalizedExerciseName == normalizedWorkoutName }
+            .flatMap(\.loggedSets)
+
+        loggedSets.append(contentsOf: workout.loggedSets)
+        return loggedSets.sorted { $0.loggedOnDate > $1.loggedOnDate }
+    }
+
+    private func makeWorkoutProgressPoints() -> [ProgressPoint] {
+        ProgressDataBuilder.points(
+            forWorkoutName: workout.name,
+            in: userData.routines,
+            metric: .maxWeight,
+            range: selectedProgressRange,
+            includeActiveSets: false,
+            currentWorkout: workout
+        )
     }
 }
 
@@ -232,6 +256,7 @@ private struct LoggedSetRow: View {
     let loggedSet: Workout.Set
     let weightUnit: WeightUnit
     let onDelete: () -> Void
+    @State private var haptic = UIImpactFeedbackGenerator(style: .medium)
 
     var body: some View {
         HStack(spacing: 14) {
@@ -251,7 +276,7 @@ private struct LoggedSetRow: View {
 
             Spacer()
 
-            Button(role: .destructive, action: onDelete) {
+            Button(role: .destructive, action: deleteWithFeedback) {
                 Image(systemName: "trash.fill")
                     .font(.headline.weight(.bold))
                     .foregroundColor(AppColors.accent)
@@ -266,6 +291,15 @@ private struct LoggedSetRow: View {
         .background(AppColors.card)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
         .cornerRadius(8)
+        .onAppear {
+            haptic.prepare()
+        }
+    }
+
+    private func deleteWithFeedback() {
+        haptic.impactOccurred()
+        haptic.prepare()
+        onDelete()
     }
 }
 
@@ -287,15 +321,41 @@ private struct WorkoutSummaryBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            SummaryMetric(value: weightUnit.formattedWeight(fromStoredPounds: estimatedOneRepMax), label: "Est. 1RM")
-            Divider().background(AppColors.border)
-            SummaryMetric(value: weightUnit.formattedWeight(fromStoredPounds: maxWeight), label: "Max Weight")
-            Divider().background(AppColors.border)
-            SummaryMetric(value: "\(maxReps)", label: "Max Reps")
+            WorkoutSummaryMetric(value: weightUnit.formattedWeight(fromStoredPounds: estimatedOneRepMax), label: "Est. 1RM")
+            Rectangle()
+                .fill(AppColors.border)
+                .frame(width: 1)
+            WorkoutSummaryMetric(value: weightUnit.formattedWeight(fromStoredPounds: maxWeight), label: "Max Weight")
+            Rectangle()
+                .fill(AppColors.border)
+                .frame(width: 1)
+            WorkoutSummaryMetric(value: "\(maxReps)", label: "Max Reps")
         }
         .frame(height: 92)
         .background(AppColors.card)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
         .cornerRadius(8)
+    }
+}
+
+private struct WorkoutSummaryMetric: View {
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.system(size: 30, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            Text(label)
+                .font(.caption.weight(.black))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
     }
 }
