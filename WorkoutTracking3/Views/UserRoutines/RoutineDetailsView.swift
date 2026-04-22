@@ -12,9 +12,8 @@ struct RoutineDetailsView: View {
     @EnvironmentObject private var userData: UserData
     @Binding var routine: Routine
     @State private var createdWorkoutID: Workout.ID?
-    @State private var activeWorkout: Workout?
+    @State private var presentedWorkoutRoute: WorkoutPresentationRoute?
     @State private var shouldShowAddWorkout = false
-    @State private var shouldShowWorkout = false
     
     private let routineWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", ""]
     
@@ -94,8 +93,10 @@ struct RoutineDetailsView: View {
                     } else {
                         ForEach(routine.workouts.indices, id: \.self) { index in
                             Button {
-                                activeWorkout = routine.workouts[index]
-                                shouldShowWorkout = true
+                                presentedWorkoutRoute = WorkoutPresentationRoute(
+                                    routineID: routine.id,
+                                    workoutID: routine.workouts[index].id
+                                )
                             } label: {
                                 WorkoutCard(
                                     workout: routine.workouts[index],
@@ -156,14 +157,6 @@ struct RoutineDetailsView: View {
                 EmptyView()
             }
             .hidden()
-            
-            NavigationLink(
-                destination: activeWorkoutDestination(),
-                isActive: $shouldShowWorkout
-            ) {
-                EmptyView()
-            }
-            .hidden()
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
@@ -181,19 +174,26 @@ struct RoutineDetailsView: View {
                     return
                 }
                 
-                activeWorkout = routine.workouts.first(where: { $0.id == newID })
-                shouldShowWorkout = activeWorkout != nil
+                presentedWorkoutRoute = WorkoutPresentationRoute(routineID: routine.id, workoutID: newID)
                 createdWorkoutID = nil
             }
         }
-    }
-
-    @ViewBuilder
-    private func activeWorkoutDestination() -> some View {
-        if let activeWorkout {
-            WorkoutDetailsRoute(routine: $routine, workout: activeWorkout)
-        } else {
-            EmptyView()
+        .fullScreenCover(item: $presentedWorkoutRoute, onDismiss: refreshRoutineFromUserData) { route in
+            NavigationView {
+                WorkoutDetailsRoute(routineID: route.routineID, workoutID: route.workoutID)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                presentedWorkoutRoute = nil
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.headline.weight(.bold))
+                            }
+                            .accessibilityLabel("Back")
+                        }
+                    }
+            }
+            .navigationViewStyle(.stack)
         }
     }
     
@@ -219,39 +219,83 @@ struct RoutineDetailsView: View {
             .flatMap(\.loggedSets)
             .reduce(0) { $0 + $1.sets.count }
     }
+
+    private func refreshRoutineFromUserData() {
+        guard let liveRoutine = userData.routines.first(where: { $0.id == routine.id }),
+              liveRoutine != routine else {
+            return
+        }
+
+        routine = liveRoutine
+    }
+}
+
+private struct WorkoutPresentationRoute: Identifiable {
+    let routineID: Routine.ID
+    let workoutID: Workout.ID
+
+    var id: String {
+        "\(routineID.uuidString)-\(workoutID.uuidString)"
+    }
 }
 
 private struct WorkoutDetailsRoute: View {
-    @Binding var routine: Routine
+    @EnvironmentObject private var userData: UserData
+    let routineID: Routine.ID
     let workoutID: Workout.ID
     @State private var workout: Workout
 
-    init(routine: Binding<Routine>, workout: Workout) {
-        self._routine = routine
-        self.workoutID = workout.id
+    init(routineID: Routine.ID, workoutID: Workout.ID) {
+        self.routineID = routineID
+        self.workoutID = workoutID
+        let workout = UserData.shared.routines
+            .first(where: { $0.id == routineID })?
+            .workouts
+            .first(where: { $0.id == workoutID }) ?? Workout(name: "Workout", sets: [], loggedSets: [])
         self._workout = State(initialValue: workout)
     }
 
     var body: some View {
-        WorkoutDetailsView(workout: $workout)
-            .onChange(of: workout) { updatedWorkout in
-                syncWorkout(updatedWorkout)
-            }
+        WorkoutDetailsView(workout: workoutBinding)
             .onAppear {
-                if let latestWorkout = routine.workouts.first(where: { $0.id == workoutID }),
-                   latestWorkout != workout {
-                    workout = latestWorkout
-                }
+                refreshWorkoutIfNeeded()
             }
     }
 
-    private func syncWorkout(_ updatedWorkout: Workout) {
-        guard let index = routine.workouts.firstIndex(where: { $0.id == workoutID }) else {
+    private var workoutBinding: Binding<Workout> {
+        return Binding(
+            get: {
+                workout
+            },
+            set: { updatedWorkout in
+                workout = updatedWorkout
+                syncWorkout(updatedWorkout)
+            }
+        )
+    }
+
+    private func refreshWorkoutIfNeeded() {
+        guard let liveWorkout = userData.routines
+            .first(where: { $0.id == routineID })?
+            .workouts
+            .first(where: { $0.id == workoutID }),
+              liveWorkout != workout else {
             return
         }
 
-        if routine.workouts[index] != updatedWorkout {
-            routine.workouts[index] = updatedWorkout
+        workout = liveWorkout
+    }
+
+    private func syncWorkout(_ updatedWorkout: Workout) {
+        var routines = userData.routines
+        guard let routineIndex = routines.firstIndex(where: { $0.id == routineID }),
+              let workoutIndex = routines[routineIndex].workouts.firstIndex(where: { $0.id == workoutID }) else {
+            return
+        }
+
+        if routines[routineIndex].workouts[workoutIndex] != updatedWorkout {
+            routines[routineIndex].workouts[workoutIndex] = updatedWorkout
+            userData.routines = routines
         }
     }
 }
@@ -305,13 +349,13 @@ private struct WorkoutCard: View {
                     .minimumScaleFactor(0.78)
 
                 HStack(spacing: 8) {
-                    WorkoutStatChip(
-                        value: "\(workout.sets.count)",
-                        label: "active",
-                        systemImage: "square.stack.3d.up.fill",
-                        color: AppColors.accent,
-                        minWidth: 84
-                    )
+                    if !workout.sets.isEmpty {
+                        WorkoutStatusChip(
+                            label: "In Progress",
+                            systemImage: "square.stack.3d.up.fill",
+                            color: AppColors.success
+                        )
+                    }
 
                     WorkoutStatChip(
                         value: "\(loggedCount)",
@@ -332,6 +376,31 @@ private struct WorkoutCard: View {
         .padding(16)
         .background(AppColors.card)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
+    }
+}
+
+private struct WorkoutStatusChip: View {
+    let label: String
+    let systemImage: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.caption.weight(.black))
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.caption.weight(.black))
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .frame(minWidth: 112, alignment: .leading)
+        .background(AppColors.elevated)
         .cornerRadius(8)
     }
 }

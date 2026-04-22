@@ -43,7 +43,7 @@ private let routineTemplates: [RoutineTemplate] = [
 
 struct RoutineView: View {
     @EnvironmentObject var userData: UserData
-    @State private var activeRoutine: Routine?
+    @State private var activeRoutineID: Routine.ID?
     @State private var shouldOpenRoutine = false
     @State private var shouldAddRoutine = false
     @State private var shouldShowTemplates = false
@@ -115,7 +115,7 @@ struct RoutineView: View {
                     } else {
                         ForEach(Array(sortedRoutineIndices.enumerated()), id: \.element) { row, index in
                             Button {
-                                activeRoutine = userData.routines[index]
+                                activeRoutineID = userData.routines[index].id
                                 shouldOpenRoutine = true
                             } label: {
                                 RoutineCard(
@@ -229,7 +229,7 @@ struct RoutineView: View {
 
     private func openQuickWorkoutRoutine() {
         let index = quickWorkoutRoutineIndex()
-        activeRoutine = userData.routines[index]
+        activeRoutineID = userData.routines[index].id
         shouldOpenRoutine = true
     }
     
@@ -256,7 +256,7 @@ struct RoutineView: View {
         }
         let routine = Routine(name: template.title, weekday: template.weekday, workouts: workouts)
         userData.routines.append(routine)
-        activeRoutine = routine
+        activeRoutineID = routine.id
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             shouldOpenRoutine = true
@@ -273,16 +273,8 @@ struct RoutineView: View {
     
     @ViewBuilder
     private func selectedRoutineDestination() -> some View {
-        if let activeRoutine {
-            RoutineDetailsRoute(routine: activeRoutine) { updatedRoutine in
-                guard let index = userData.routines.firstIndex(where: { $0.id == updatedRoutine.id }) else {
-                    return
-                }
-
-                if userData.routines[index] != updatedRoutine {
-                    userData.routines[index] = updatedRoutine
-                }
-            }
+        if let activeRoutineID {
+            RoutineDetailsRoute(routineID: activeRoutineID)
         } else {
             EmptyView()
         }
@@ -337,7 +329,7 @@ private struct TemplatesRoutineView: View {
 
 private struct ArchivedRoutinesView: View {
     @EnvironmentObject private var userData: UserData
-    @State private var activeRoutine: Routine?
+    @State private var activeRoutineID: Routine.ID?
     @State private var shouldOpenRoutine = false
 
     private var archivedRoutineIndices: [Int] {
@@ -371,7 +363,7 @@ private struct ArchivedRoutinesView: View {
                     } else {
                         ForEach(archivedRoutineIndices, id: \.self) { index in
                             Button {
-                                activeRoutine = userData.routines[index]
+                                activeRoutineID = userData.routines[index].id
                                 shouldOpenRoutine = true
                             } label: {
                                 RoutineCard(
@@ -441,16 +433,8 @@ private struct ArchivedRoutinesView: View {
 
     @ViewBuilder
     private func selectedRoutineDestination() -> some View {
-        if let activeRoutine {
-            RoutineDetailsRoute(routine: activeRoutine) { updatedRoutine in
-                guard let index = userData.routines.firstIndex(where: { $0.id == updatedRoutine.id }) else {
-                    return
-                }
-
-                if userData.routines[index] != updatedRoutine {
-                    userData.routines[index] = updatedRoutine
-                }
-            }
+        if let activeRoutineID {
+            RoutineDetailsRoute(routineID: activeRoutineID)
         } else {
             EmptyView()
         }

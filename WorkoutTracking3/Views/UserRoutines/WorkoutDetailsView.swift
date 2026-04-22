@@ -15,7 +15,7 @@ struct WorkoutDetailsView: View {
     @State private var navigateToHistory = false
     @State private var visibleSets: [Workout.Set] = []
     @State private var haptic = UIImpactFeedbackGenerator(style: .heavy)
-    @State private var selectedProgressRange: ProgressRange = .all
+    @State private var selectedProgressRange: ProgressRange = .oneMonth
 
     private var suggestedSet: Workout.Set {
         if let currentSet = visibleSets.last {
@@ -26,7 +26,7 @@ struct WorkoutDetailsView: View {
             return currentSet
         }
         
-        if let recentSet = mostRecentMatchingLoggedSet?.sets.last {
+        if let recentSet = mostRecentMatchingLoggedSet?.sets.first {
             return recentSet
         }
         
@@ -111,19 +111,6 @@ struct WorkoutDetailsView: View {
                         }
                     }
 
-                    WorkoutSummaryBar(sets: visibleSets, weightUnit: userData.weightUnit)
-
-                    VStack(alignment: .leading, spacing: 14) {
-                        SectionTitle("Weight Progress")
-                        ProgressRangeControls(selectedRange: $selectedProgressRange)
-                        ProgressLineChart(
-                            points: workoutProgressPoints,
-                            metric: .maxWeight,
-                            weightUnit: userData.weightUnit,
-                            emptyText: "Complete workout logs to see weight progress over time."
-                        )
-                    }
-
                     Button {
                         logCurrentSet()
                         haptic.impactOccurred()
@@ -159,6 +146,8 @@ struct WorkoutDetailsView: View {
                         .hidden()
                     )
 
+                    WorkoutSummaryBar(sets: visibleSets, weightUnit: userData.weightUnit)
+
                     if let mostRecentLoggedSet = mostRecentMatchingLoggedSet {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionTitle("Most Recent")
@@ -169,6 +158,17 @@ struct WorkoutDetailsView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
                                 .cornerRadius(8)
                         }
+                    }
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        SectionTitle("Weight Progress")
+                        ProgressRangeControls(selectedRange: $selectedProgressRange)
+                        ProgressLineChart(
+                            points: workoutProgressPoints,
+                            metric: .maxWeight,
+                            weightUnit: userData.weightUnit,
+                            emptyText: "Complete workout logs to see weight progress over time."
+                        )
                     }
                 }
                 .padding(.horizontal, 22)

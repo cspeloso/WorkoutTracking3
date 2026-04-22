@@ -20,7 +20,7 @@ struct SettingsView: View {
     @State private var showDeleteAllConfirmation = false
     @State private var showRestoreConfirmation = false
     @State private var showFeedbackFallback = false
-    private let feedbackEmail = "chrispeloso2@gmail.com"
+    private let feedbackEmail = "business@chrispeloso.com"
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"

@@ -58,7 +58,7 @@ struct ContentView: View {
 
 struct HomeView: View {
     @EnvironmentObject private var userData: UserData
-    @State private var activeRoutine: Routine?
+    @State private var activeRoutineID: Routine.ID?
     @State private var shouldOpenRoutine = false
     @State private var shouldCreateRoutine = false
 
@@ -73,7 +73,18 @@ struct HomeView: View {
     }
 
     private var activeRoutineIndices: [Int] {
-        userData.routines.indices.filter { !userData.routines[$0].isArchived }
+        userData.routines.indices.filter { !userData.routines[$0].isArchived }.sorted { lhs, rhs in
+            let lhsRoutine = userData.routines[lhs]
+            let rhsRoutine = userData.routines[rhs]
+            let lhsDayIndex = weekdaySortIndex(lhsRoutine.weekday)
+            let rhsDayIndex = weekdaySortIndex(rhsRoutine.weekday)
+
+            if lhsDayIndex != rhsDayIndex {
+                return lhsDayIndex < rhsDayIndex
+            }
+
+            return routineDisplayName(lhsRoutine) < routineDisplayName(rhsRoutine)
+        }
     }
 
     private var todaysRoutineIndex: Int? {
@@ -101,7 +112,7 @@ struct HomeView: View {
                         if let todaysRoutineIndex,
                            userData.routines.indices.contains(todaysRoutineIndex) {
                             Button {
-                                activeRoutine = userData.routines[todaysRoutineIndex]
+                                activeRoutineID = userData.routines[todaysRoutineIndex].id
                                 shouldOpenRoutine = true
                             } label: {
                                 RoutineCard(
@@ -133,7 +144,7 @@ struct HomeView: View {
                             SectionTitle("Quick Start")
                             ForEach(activeRoutineIndices, id: \.self) { index in
                                 Button {
-                                    activeRoutine = userData.routines[index]
+                                    activeRoutineID = userData.routines[index].id
                                     shouldOpenRoutine = true
                                 } label: {
                                     RoutineCard(
@@ -166,31 +177,39 @@ struct HomeView: View {
 
     private func selectedRoutineDestination() -> some View {
         Group {
-            if let activeRoutine {
-                RoutineDetailsRoute(routine: activeRoutine) { updatedRoutine in
-                    guard let index = userData.routines.firstIndex(where: { $0.id == updatedRoutine.id }) else {
-                        return
-                    }
-                    
-                    if userData.routines[index] != updatedRoutine {
-                        userData.routines[index] = updatedRoutine
-                    }
-                }
+            if let activeRoutineID {
+                RoutineDetailsRoute(routineID: activeRoutineID)
             } else {
                 EmptyView()
             }
         }
     }
+
+    private func weekdaySortIndex(_ weekday: String) -> Int {
+        let orderedWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        return orderedWeekdays.firstIndex(of: weekday) ?? 999
+    }
+
+    private func routineDisplayName(_ routine: Routine) -> String {
+        if !routine.name.isEmpty {
+            return routine.name
+        }
+
+        return routine.weekday.isEmpty ? "Untitled Routine" : routine.weekday
+    }
 }
 
 struct RoutineDetailsRoute: View {
+    @EnvironmentObject private var userData: UserData
+    let routineID: Routine.ID
     @State private var routine: Routine
     @State private var pendingSyncWorkItem: DispatchWorkItem?
-    let syncRoutine: (Routine) -> Void
 
-    init(routine: Routine, syncRoutine: @escaping (Routine) -> Void) {
+    init(routineID: Routine.ID) {
+        self.routineID = routineID
+        let routine = UserData.shared.routines.first(where: { $0.id == routineID })
+            ?? Routine(name: "Routine", weekday: "", workouts: [])
         self._routine = State(initialValue: routine)
-        self.syncRoutine = syncRoutine
     }
 
     var body: some View {
@@ -198,21 +217,123 @@ struct RoutineDetailsRoute: View {
             .onChange(of: routine) { updatedRoutine in
                 scheduleSync(updatedRoutine)
             }
-            .onDisappear {
-                pendingSyncWorkItem?.cancel()
-                syncRoutine(routine)
+            .onAppear {
+                refreshFromLiveRoutineIfNeeded()
             }
+            .onDisappear {
+                flushSync()
+            }
+    }
+
+    private func refreshFromLiveRoutineIfNeeded() {
+        guard let liveRoutine = userData.routines.first(where: { $0.id == routineID }),
+              liveRoutine != routine else {
+            return
+        }
+
+        routine = mergedRoutine(local: routine, live: liveRoutine)
     }
 
     private func scheduleSync(_ updatedRoutine: Routine) {
         pendingSyncWorkItem?.cancel()
 
         let workItem = DispatchWorkItem {
-            syncRoutine(updatedRoutine)
+            sync(updatedRoutine)
         }
 
         pendingSyncWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+    }
+
+    private func flushSync() {
+        pendingSyncWorkItem?.cancel()
+        pendingSyncWorkItem = nil
+        sync(routine)
+    }
+
+    private func sync(_ updatedRoutine: Routine) {
+        guard let index = userData.routines.firstIndex(where: { $0.id == routineID }) else {
+            return
+        }
+
+        let safeRoutine = routineForSync(local: updatedRoutine, live: userData.routines[index])
+        if userData.routines[index] != safeRoutine {
+            userData.routines[index] = safeRoutine
+        }
+    }
+
+    private func routineForSync(local: Routine, live: Routine) -> Routine {
+        var synced = local
+        synced.workouts = local.workouts.map { localWorkout in
+            guard let liveWorkout = live.workouts.first(where: { $0.id == localWorkout.id }) else {
+                return localWorkout
+            }
+
+            var workout = localWorkout
+            workout.sets = liveWorkout.sets
+            workout.loggedSets = liveWorkout.loggedSets
+            workout.startDate = liveWorkout.startDate
+            return workout
+        }
+
+        return synced
+    }
+
+    private func mergedRoutine(local: Routine, live: Routine) -> Routine {
+        var merged = local
+        merged.workouts = local.workouts.map { localWorkout in
+            guard let liveWorkout = live.workouts.first(where: { $0.id == localWorkout.id }) else {
+                return localWorkout
+            }
+
+            return mergedWorkout(local: localWorkout, live: liveWorkout)
+        }
+
+        let localWorkoutIDs = Set(local.workouts.map(\.id))
+        merged.workouts.append(contentsOf: live.workouts.filter { !localWorkoutIDs.contains($0.id) })
+        return merged
+    }
+
+    private func mergedWorkout(local: Workout, live: Workout) -> Workout {
+        var merged = local
+
+        if live.sets.count > local.sets.count {
+            merged.sets = live.sets
+        }
+
+        if live.loggedSets.count > local.loggedSets.count {
+            merged.loggedSets = live.loggedSets
+        }
+
+        if live.startDate > local.startDate {
+            merged.startDate = live.startDate
+        }
+
+        return merged
+    }
+}
+
+private struct LiveRoutineDetailsRoute: View {
+    @EnvironmentObject private var userData: UserData
+    let routineID: Routine.ID
+
+    var body: some View {
+        if let binding {
+            RoutineDetailsView(routine: binding)
+        } else {
+            Text("Routine not found.")
+                .font(.headline.weight(.bold))
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var binding: Binding<Routine>? {
+        guard let index = userData.routines.firstIndex(where: { $0.id == routineID }) else {
+            return nil
+        }
+
+        return $userData.routines[index]
     }
 }
 
