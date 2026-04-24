@@ -12,6 +12,7 @@ struct NewSetCreator2: View {
     
     @EnvironmentObject private var userData: UserData
     @Binding var sets: [Workout.Set]
+    var onAddSet: (() -> Void)? = nil
     
     @State private var displayWeight: Double = 0.0
     @State private var reps: Int = 0
@@ -40,6 +41,7 @@ struct NewSetCreator2: View {
             HStack(spacing: 8) {
                 Button {
                     sets = sets + [Workout.Set(reps: reps, weight: userData.weightUnit.storedPounds(fromDisplayWeight: displayWeight))]
+                    onAddSet?()
                     WKInterfaceDevice.current().play(.success)
                 } label: {
                     Text("Add Set")

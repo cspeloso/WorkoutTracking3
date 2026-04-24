@@ -28,7 +28,10 @@ struct WorkoutDetailsView: View {
             }
             
             Section {
-                NewSetCreator2(sets: $workout.sets)
+                NewSetCreator2(
+                    sets: $workout.sets,
+                    onAddSet: handleSetAdded
+                )
             } header: {
                 Text("Add new sets")
             }
@@ -105,11 +108,19 @@ struct WorkoutDetailsView: View {
             return
         }
         
-        workout.startDate = Date()
-        let newLoggedSet = Workout.LoggedSet(sets: workout.sets, loggedOnDate: workout.startDate)
+        let loggedOnDate = workout.startDate
+        let newLoggedSet = Workout.LoggedSet(sets: workout.sets, loggedOnDate: loggedOnDate)
         workout.loggedSets.append(newLoggedSet)
         workout.sets.removeAll()
+        workout.startDate = Date()
         WKInterfaceDevice.current().play(.success)
+    }
+
+    @MainActor
+    private func handleSetAdded() {
+        if workout.sets.count == 1 {
+            workout.startDate = Date()
+        }
     }
 }
 

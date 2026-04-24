@@ -202,6 +202,9 @@ struct WorkoutDetailsView: View {
     // Ensure UI-driving mutations happen on the main actor
     @MainActor
     private func addSet(_ set: Workout.Set) {
+        if visibleSets.isEmpty {
+            workout.startDate = Date()
+        }
         let updatedSets = visibleSets + [set]
         visibleSets = updatedSets
         workout.sets = updatedSets
@@ -214,11 +217,12 @@ struct WorkoutDetailsView: View {
             return
         }
 
-        workout.startDate = Date()
-        let newLoggedSet = Workout.LoggedSet(sets: visibleSets, loggedOnDate: workout.startDate)
+        let loggedOnDate = workout.startDate
+        let newLoggedSet = Workout.LoggedSet(sets: visibleSets, loggedOnDate: loggedOnDate)
         workout.loggedSets = workout.loggedSets + [newLoggedSet]
         workout.sets = []
         visibleSets = []
+        workout.startDate = Date()
         refreshCachedWorkoutData()
         AppReviewRequester.recordCompletedWorkoutAndRequestIfAppropriate()
     }

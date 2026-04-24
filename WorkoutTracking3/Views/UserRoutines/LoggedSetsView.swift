@@ -15,6 +15,16 @@ struct LoggedSetsView: View {
         workout.name.normalizedExerciseName
     }
 
+    private var currentRoutineMetadata: (name: String, isArchived: Bool) {
+        guard let routine = userData.routines.first(where: { routine in
+            routine.workouts.contains(where: { $0.id == workout.id })
+        }) else {
+            return ("Current workout", false)
+        }
+
+        return (routine.name.isEmpty ? routine.weekday : routine.name, routine.isArchived)
+    }
+
     private var historyEntries: [LoggedSetHistoryEntry] {
         var entries = userData.routines.flatMap { routine in
             routine.workouts
@@ -35,8 +45,8 @@ struct LoggedSetsView: View {
             LoggedSetHistoryEntry(
                 source: .current(loggedSetID: loggedSet.id),
                 loggedSet: loggedSet,
-                routineName: "Current workout",
-                isArchived: false
+                routineName: currentRoutineMetadata.name,
+                isArchived: currentRoutineMetadata.isArchived
             )
         })
 
@@ -72,12 +82,6 @@ struct LoggedSetsView: View {
                                     }
                                 } else {
                                     Text("**Logged on \(formatDate(date: entry.loggedSet.loggedOnDate))**")
-                                }
-
-                                if !entry.routineName.isEmpty {
-                                    Text(entry.isArchived ? "\(entry.routineName) · Archived" : entry.routineName)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundColor(.secondary)
                                 }
 
                                 ForEach(entry.loggedSet.sets) { set in
