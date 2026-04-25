@@ -110,6 +110,7 @@ struct WorkoutDetailsView: View {
                             .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
+                    .transaction(disableWorkoutLayoutAnimations)
 
                     Button {
                         navigateToHistory = true
@@ -160,6 +161,7 @@ struct WorkoutDetailsView: View {
                 }
                 .padding(.horizontal, 22)
                 .padding(.bottom, 32)
+                .transaction(disableWorkoutLayoutAnimations)
             }
         }
         .navigationTitle("")
@@ -193,8 +195,7 @@ struct WorkoutDetailsView: View {
         let updatedSets = visibleSets.enumerated()
             .filter { !offsets.contains($0.offset) }
             .map(\.element)
-        visibleSets = updatedSets
-        workout.sets = updatedSets
+        updateCurrentSets(updatedSets)
     }
 
     // Ensure UI-driving mutations happen on the main actor
@@ -204,8 +205,7 @@ struct WorkoutDetailsView: View {
             workout.startDate = Date()
         }
         let updatedSets = visibleSets + [set]
-        visibleSets = updatedSets
-        workout.sets = updatedSets
+        updateCurrentSets(updatedSets)
     }
 
     @MainActor
@@ -217,12 +217,38 @@ struct WorkoutDetailsView: View {
 
         let loggedOnDate = workout.startDate
         let newLoggedSet = Workout.LoggedSet(sets: visibleSets, loggedOnDate: loggedOnDate)
-        workout.loggedSets = workout.loggedSets + [newLoggedSet]
-        workout.sets = []
-        visibleSets = []
-        workout.startDate = Date()
-        refreshCachedWorkoutData()
+        var transaction = workoutLayoutTransaction
+
+        withTransaction(transaction) {
+            workout.loggedSets = workout.loggedSets + [newLoggedSet]
+            workout.sets = []
+            visibleSets = []
+            workout.startDate = Date()
+            refreshCachedWorkoutData()
+        }
         AppReviewRequester.recordCompletedWorkoutAndRequestIfAppropriate()
+    }
+
+    @MainActor
+    private func updateCurrentSets(_ updatedSets: [Workout.Set]) {
+        var transaction = workoutLayoutTransaction
+
+        withTransaction(transaction) {
+            visibleSets = updatedSets
+            workout.sets = updatedSets
+        }
+    }
+
+    private var workoutLayoutTransaction: Transaction {
+        var transaction = Transaction()
+        transaction.animation = nil
+        transaction.disablesAnimations = true
+        return transaction
+    }
+
+    private func disableWorkoutLayoutAnimations(_ transaction: inout Transaction) {
+        transaction.animation = nil
+        transaction.disablesAnimations = true
     }
 
     private func refreshCachedWorkoutData() {
