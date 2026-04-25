@@ -28,7 +28,7 @@ struct WorkoutDetailsView: View {
             return currentSet
         }
         
-        if let recentSet = mostRecentMatchingLoggedSet?.sets.first {
+        if let recentSet = makeMatchingLoggedSets().first?.sets.first {
             return recentSet
         }
         
@@ -58,9 +58,6 @@ struct WorkoutDetailsView: View {
                             .font(.system(size: 38, weight: .black, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
-                        Text("\(visibleSets.count) set\(visibleSets.count == 1 ? "" : "s") logged")
-                            .font(.title3.weight(.black))
-                            .foregroundColor(AppColors.success)
                     }
                     .padding(.top, 18)
 
@@ -72,7 +69,7 @@ struct WorkoutDetailsView: View {
                     )
 
                     VStack(alignment: .leading, spacing: 14) {
-                        SectionTitle("Logged Sets")
+                        SectionTitle("\(visibleSets.count) Logged Set\(visibleSets.count == 1 ? "" : "s")")
 
                         if visibleSets.isEmpty {
                             Text("No sets logged yet.")
@@ -156,6 +153,7 @@ struct WorkoutDetailsView: View {
                             metric: .maxWeight,
                             weightUnit: userData.weightUnit,
                             emptyText: "Complete workout logs to see weight progress over time.",
+                            selectedRange: selectedProgressRange,
                             currentPoint: currentProgressPoint
                         )
                     }

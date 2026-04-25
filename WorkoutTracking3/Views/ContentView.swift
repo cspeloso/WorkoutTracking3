@@ -422,7 +422,8 @@ struct ProgressDashboardView: View {
                             points: progressPoints,
                             metric: selectedMetric,
                             weightUnit: userData.weightUnit,
-                            emptyText: "Complete workout logs to build your progress chart."
+                            emptyText: "Complete workout logs to build your progress chart.",
+                            selectedRange: selectedRange
                         )
                     }
 
@@ -801,6 +802,7 @@ struct ProgressLineChart: View {
     let metric: ProgressMetric
     let weightUnit: WeightUnit
     let emptyText: String
+    var selectedRange: ProgressRange = .oneMonth
     var currentPoint: ProgressPoint? = nil
     @State private var selectedPoint: ProgressPoint?
 
@@ -982,7 +984,7 @@ struct ProgressLineChart: View {
                                 Text(metric.formattedRawValue(selectedPoint.value, weightUnit: weightUnit))
                                     .font(.caption.weight(.black))
                                     .foregroundColor(isCurrentPoint(selectedPoint) ? AppColors.success : AppColors.accent)
-                                Text(isCurrentPoint(selectedPoint) ? "Current" : shortDate(selectedPoint.date))
+                                Text(isCurrentPoint(selectedPoint) ? "Current" : chartDate(selectedPoint.date))
                                     .font(.caption2.weight(.bold))
                                     .foregroundColor(.secondary)
                             }
@@ -1008,9 +1010,9 @@ struct ProgressLineChart: View {
                 }
 
                 HStack {
-                    Text(shortDate(sortedPoints.first?.date))
+                    Text(chartDate(sortedPoints.first?.date))
                     Spacer()
-                    Text(shortDate(sortedPoints.last?.date))
+                    Text(chartDate(sortedPoints.last?.date))
                 }
                 .font(.caption.weight(.bold))
                 .foregroundColor(.secondary)
@@ -1069,7 +1071,7 @@ struct ProgressLineChart: View {
     }
 
     private func calloutLocation(for pointLocation: CGPoint, in size: CGSize) -> CGPoint {
-        let calloutWidth: CGFloat = 96
+        let calloutWidth: CGFloat = selectedRange == .all ? 106 : 118
         let calloutHeight: CGFloat = 48
         let x = min(max(pointLocation.x, calloutWidth / 2), size.width - (calloutWidth / 2))
         let preferredY = pointLocation.y - 42
@@ -1087,13 +1089,17 @@ struct ProgressLineChart: View {
         return CGPoint(x: x, y: min(max(y, labelHeight / 2), size.height - (labelHeight / 2)))
     }
 
-    private func shortDate(_ date: Date?) -> String {
+    private func chartDate(_ date: Date?) -> String {
         guard let date else {
             return ""
         }
 
         let formatter = DateFormatter()
-        formatter.setLocalizedDateFormatFromTemplate("MMM d")
+        if selectedRange == .all {
+            formatter.dateFormat = "MMM ''yy"
+        } else {
+            formatter.setLocalizedDateFormatFromTemplate("MMM d yyyy")
+        }
         return formatter.string(from: date)
     }
 }

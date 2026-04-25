@@ -24,6 +24,7 @@ struct NewSetCreator2: View {
     @State private var activeWeightUnit = UserData.shared.weightUnit
     @State private var hasInitializedWeightUnit = false
     private let initialStoredWeight: Double
+    private let initialReps: Int
     
     @FocusState private var focusedField: SetInputField?
     
@@ -44,6 +45,7 @@ struct NewSetCreator2: View {
         self._reps = State(initialValue: initialReps)
         self._displayWeight = State(initialValue: initialWeight)
         self.initialStoredWeight = initialWeight
+        self.initialReps = initialReps
         self.onAddSet = onAddSet
     }
     
@@ -75,13 +77,13 @@ struct NewSetCreator2: View {
                 valueText: "\(reps)",
                 focused: focusedField == .reps,
                 smallMinus: { reps = max(0, reps - 1) },
-                largeMinus: { reps = max(0, reps - 5) },
+                largeMinus: { reps = max(0, reps - 2) },
                 smallPlus: { reps += 1 },
-                largePlus: { reps += 5 },
+                largePlus: { reps += 2 },
                 smallMinusTitle: "-1",
-                largeMinusTitle: "-5",
+                largeMinusTitle: "-2",
                 smallPlusTitle: "+1",
-                largePlusTitle: "+5",
+                largePlusTitle: "+2",
                 valueField: {
                     TextField(
                         "Reps",
@@ -127,6 +129,7 @@ struct NewSetCreator2: View {
             if !hasInitializedWeightUnit {
                 activeWeightUnit = userData.weightUnit
                 displayWeight = userData.weightUnit.displayWeight(fromStoredPounds: initialStoredWeight)
+                reps = initialReps
                 hasInitializedWeightUnit = true
             }
             haptic.prepare()

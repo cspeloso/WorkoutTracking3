@@ -10,10 +10,12 @@ import SwiftUI
 struct RoutineDetailsView: View {
     
     @EnvironmentObject private var userData: UserData
+    @Environment(\.editMode) private var editMode
     @Binding var routine: Routine
     @State private var createdWorkoutID: Workout.ID?
     @State private var presentedWorkoutRoute: WorkoutPresentationRoute?
     @State private var shouldShowAddWorkout = false
+    @FocusState private var isRoutineNameFocused: Bool
     
     private let routineWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", ""]
     
@@ -25,14 +27,53 @@ struct RoutineDetailsView: View {
                 Section {
                     HStack(alignment: .top, spacing: 14) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(routine.name.isEmpty ? "Routine" : routine.name)
-                                .font(.system(size: 36, weight: .black, design: .rounded))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                            Text(routine.weekday.isEmpty ? "No day" : routine.weekday)
-                                .font(.title3.weight(.black))
-                                .foregroundColor(AppColors.accent)
+                            if isEditing {
+                                TextField("Routine Name", text: $routine.name)
+                                    .font(.system(size: 36, weight: .black, design: .rounded))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                                    .focused($isRoutineNameFocused)
+                                    .textFieldStyle(.plain)
+                                    .submitLabel(.done)
+                                    .onSubmit {
+                                        isRoutineNameFocused = false
+                                    }
+                            } else {
+                                Text(routine.name.isEmpty ? "Routine" : routine.name)
+                                    .font(.system(size: 36, weight: .black, design: .rounded))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.7)
+                            }
+
+                            if isEditing {
+                                Menu {
+                                    ForEach(routineWeekdays, id: \.self) { weekday in
+                                        Button(weekday.isEmpty ? "No day" : weekday) {
+                                            routine.weekday = weekday
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Text(routine.weekday.isEmpty ? "No day" : routine.weekday)
+                                            .font(.title3.weight(.black))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
+
+                                        Image(systemName: "chevron.down")
+                                            .font(.caption.weight(.black))
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .foregroundColor(AppColors.accent)
+                                }
+                            } else {
+                                Text(routine.weekday.isEmpty ? "No day" : routine.weekday)
+                                    .font(.title3.weight(.black))
+                                    .foregroundColor(AppColors.accent)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                         Spacer()
 
@@ -50,33 +91,6 @@ struct RoutineDetailsView: View {
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 18, leading: 22, bottom: 8, trailing: 22))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-
-                Section {
-                    SectionTitle("Routine Details")
-
-                    TextField("Routine Name", text: $routine.name)
-                        .font(.headline.weight(.bold))
-                        .padding(16)
-                        .background(AppColors.card)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
-                        .cornerRadius(8)
-
-                    Picker("Weekday", selection: $routine.weekday) {
-                        ForEach(routineWeekdays, id: \.self) { weekday in
-                            Text(weekday.isEmpty ? "No day" : weekday).tag(weekday)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .font(.headline.weight(.bold))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(AppColors.card)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
-                    .cornerRadius(8)
-                }
-                .listRowInsets(EdgeInsets(top: 6, leading: 22, bottom: 6, trailing: 22))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
@@ -163,6 +177,9 @@ struct RoutineDetailsView: View {
         .toolbar {
             EditButton()
         }
+        .onChange(of: editMode?.wrappedValue) { newMode in
+            isRoutineNameFocused = newMode?.isEditing == true
+        }
         .onChange(of: createdWorkoutID) { newID in
             guard let newID else {
                 return
@@ -195,6 +212,10 @@ struct RoutineDetailsView: View {
             }
             .navigationViewStyle(.stack)
         }
+    }
+
+    private var isEditing: Bool {
+        editMode?.wrappedValue.isEditing == true
     }
     
     func deleteWorkout(at offsets: IndexSet){
@@ -397,13 +418,16 @@ private struct WorkoutCard: View {
                     )
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer()
 
             Image(systemName: "chevron.right")
                 .font(.headline.weight(.bold))
                 .foregroundColor(.secondary.opacity(0.6))
+                .frame(width: 22)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(AppColors.card)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
@@ -426,11 +450,11 @@ private struct WorkoutStatusChip: View {
                 .font(.caption.weight(.black))
                 .foregroundColor(color)
                 .lineLimit(1)
-                .minimumScaleFactor(0.78)
+                .minimumScaleFactor(0.68)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
-        .frame(minWidth: 112, alignment: .leading)
+        .frame(maxWidth: 112, alignment: .leading)
         .background(AppColors.elevated)
         .cornerRadius(8)
     }
@@ -453,17 +477,17 @@ private struct WorkoutStatChip: View {
                 .font(.caption.weight(.black))
                 .foregroundColor(color == .secondary ? .secondary : color)
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.62)
 
             Text(label)
                 .font(.caption.weight(.bold))
                 .foregroundColor(color == .secondary ? .secondary : color)
                 .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .minimumScaleFactor(0.68)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
-        .frame(minWidth: minWidth, alignment: .leading)
+        .frame(maxWidth: minWidth, alignment: .leading)
         .background(AppColors.elevated)
         .cornerRadius(8)
     }
