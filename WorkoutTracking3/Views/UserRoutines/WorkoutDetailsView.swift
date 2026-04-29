@@ -47,6 +47,14 @@ struct WorkoutDetailsView: View {
         return ProgressPoint(date: Date(), value: maxWeight)
     }
 
+    private var summarySets: [Workout.Set] {
+        if !visibleSets.isEmpty {
+            return visibleSets
+        }
+
+        return mostRecentMatchingLoggedSet?.sets ?? []
+    }
+
     var body: some View {
         ZStack {
             AppColors.background.ignoresSafeArea()
@@ -132,7 +140,7 @@ struct WorkoutDetailsView: View {
                         .hidden()
                     )
 
-                    WorkoutSummaryBar(sets: visibleSets, weightUnit: userData.weightUnit)
+                    WorkoutSummaryBar(sets: summarySets, weightUnit: userData.weightUnit)
 
                     if let mostRecentLoggedSet = mostRecentMatchingLoggedSet {
                         VStack(alignment: .leading, spacing: 14) {

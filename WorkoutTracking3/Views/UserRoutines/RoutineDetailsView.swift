@@ -105,7 +105,7 @@ struct RoutineDetailsView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        ForEach(Array(displayedWorkoutIndices.enumerated()), id: \.element) { displayIndex, index in
+                        ForEach(displayedWorkoutIndices, id: \.self) { index in
                             Button {
                                 presentedWorkoutRoute = WorkoutPresentationRoute(
                                     routineID: routine.id,
@@ -114,8 +114,9 @@ struct RoutineDetailsView: View {
                             } label: {
                                 WorkoutCard(
                                     workout: routine.workouts[index],
-                                    index: displayIndex + 1,
-                                    loggedCount: loggedSetCount(for: routine.workouts[index])
+                                    index: index + 1,
+                                    loggedCount: loggedSetCount(for: routine.workouts[index]),
+                                    hasLoggedToday: hasLoggedToday(for: routine.workouts[index])
                                 )
                             }
                             .buttonStyle(.plain)
@@ -228,19 +229,24 @@ struct RoutineDetailsView: View {
     }
 
     private var displayedWorkoutIndices: [Int] {
-        routine.workouts.indices.sorted { lhs, rhs in
-            let lhsIsInProgress = !routine.workouts[lhs].sets.isEmpty
-            let rhsIsInProgress = !routine.workouts[rhs].sets.isEmpty
-
-            if lhsIsInProgress != rhsIsInProgress {
-                return lhsIsInProgress && !rhsIsInProgress
-            }
-
-            return lhs < rhs
-        }
+        Array(routine.workouts.indices)
     }
 
     private func loggedSetCount(for workout: Workout) -> Int {
+        matchingWorkouts(for: workout)
+            .flatMap(\.loggedSets)
+            .reduce(0) { $0 + $1.sets.count }
+    }
+
+    private func hasLoggedToday(for workout: Workout) -> Bool {
+        matchingWorkouts(for: workout)
+            .flatMap(\.loggedSets)
+            .contains { loggedSet in
+                !loggedSet.sets.isEmpty && Calendar.current.isDateInToday(loggedSet.loggedOnDate)
+            }
+    }
+
+    private func matchingWorkouts(for workout: Workout) -> [Workout] {
         let normalizedWorkoutName = workout.name.normalizedExerciseName
         var matchingWorkouts = userData.routines
             .flatMap(\.workouts)
@@ -252,8 +258,6 @@ struct RoutineDetailsView: View {
         matchingWorkouts.append(contentsOf: routine.workouts.filter { $0.name.normalizedExerciseName == normalizedWorkoutName })
 
         return matchingWorkouts
-            .flatMap(\.loggedSets)
-            .reduce(0) { $0 + $1.sets.count }
     }
 
     private func refreshRoutineFromUserData() {
@@ -384,6 +388,7 @@ private struct WorkoutCard: View {
     let workout: Workout
     let index: Int
     let loggedCount: Int
+    let hasLoggedToday: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -412,8 +417,8 @@ private struct WorkoutCard: View {
                     WorkoutStatChip(
                         value: "\(loggedCount)",
                         label: "logged",
-                        systemImage: "checkmark",
-                        color: .secondary,
+                        systemImage: hasLoggedToday ? "checkmark.circle.fill" : "checkmark",
+                        color: hasLoggedToday ? AppColors.success : .secondary,
                         minWidth: 98
                     )
                 }
@@ -487,7 +492,7 @@ private struct WorkoutStatChip: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
-        .frame(maxWidth: minWidth, alignment: .leading)
+        .frame(minWidth: minWidth, alignment: .leading)
         .background(AppColors.elevated)
         .cornerRadius(8)
     }

@@ -69,6 +69,8 @@ struct NewSetCreator2: View {
                         .focused($focusedField, equals: .weight)
                         .multilineTextAlignment(.center)
                         .font(.system(size: 34, weight: .black, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.45)
                 }
             )
 
@@ -182,7 +184,7 @@ private struct SetAdjuster<ValueField: View>: View {
                 AdjustButton(title: smallMinusTitle, isEmphasized: false, action: smallMinus)
 
                 valueField()
-                    .frame(width: 88, height: 62)
+                    .frame(width: 108, height: 62)
                     .background(AppColors.elevated)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
