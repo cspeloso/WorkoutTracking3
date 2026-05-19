@@ -29,6 +29,7 @@ struct ContentView: View {
         .environmentObject(UserData.shared)
         .onAppear {
             AppReviewRequester.recordAppLaunch()
+            AppAnalytics.logAppOpened(platform: "ios", routineCount: UserData.shared.routines.count)
 
             guard !hasCompletedWeightUnitPrompt else {
                 return
@@ -44,15 +45,26 @@ struct ContentView: View {
             Button("Pounds (lb)") {
                 UserData.shared.setWeightUnitPreference(.pounds)
                 hasCompletedWeightUnitPrompt = true
+                logOnboardingCompleted(weightUnit: .pounds)
             }
 
             Button("Kilograms (kg)") {
                 UserData.shared.setWeightUnitPreference(.kilograms)
                 hasCompletedWeightUnitPrompt = true
+                logOnboardingCompleted(weightUnit: .kilograms)
             }
         } message: {
             Text("Which unit would you like to use for logging sets? You can change this later in Settings.")
         }
+    }
+
+    private func logOnboardingCompleted(weightUnit: WeightUnit) {
+        AppAnalytics.log(
+            AppAnalytics.Event.onboardingCompleted,
+            parameters: [
+                AppAnalytics.Param.weightUnit: weightUnit.rawValue
+            ]
+        )
     }
 }
 

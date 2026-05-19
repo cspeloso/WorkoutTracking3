@@ -18,6 +18,7 @@ struct WorkoutDetailsView: View {
     @State private var selectedProgressRange: ProgressRange = .oneMonth
     @State private var cachedMatchingLoggedSets: [Workout.LoggedSet] = []
     @State private var cachedProgressPoints: [ProgressPoint] = []
+    @State private var didLogWorkoutStarted = false
 
     private var suggestedSet: Workout.Set {
         if let currentSet = visibleSets.last {
@@ -121,6 +122,13 @@ struct WorkoutDetailsView: View {
                     .transaction(disableWorkoutLayoutAnimations)
 
                     Button {
+                        AppAnalytics.log(
+                            AppAnalytics.Event.historyViewed,
+                            parameters: [
+                                AppAnalytics.Param.source: "workout_detail",
+                                AppAnalytics.Param.loggedSetCount: workout.loggedSets.count
+                            ]
+                        )
                         navigateToHistory = true
                     } label: {
                         Label("History", systemImage: "clock.fill")
@@ -185,6 +193,7 @@ struct WorkoutDetailsView: View {
             visibleSets = workout.sets
             refreshCachedWorkoutData()
             haptic.prepare()
+            logWorkoutStartedIfNeeded()
         }
         .onChange(of: workout.sets) { newSets in
             if visibleSets != newSets {
@@ -225,7 +234,7 @@ struct WorkoutDetailsView: View {
 
         let loggedOnDate = workout.startDate
         let newLoggedSet = Workout.LoggedSet(sets: visibleSets, loggedOnDate: loggedOnDate)
-        var transaction = workoutLayoutTransaction
+        let transaction = workoutLayoutTransaction
 
         withTransaction(transaction) {
             workout.loggedSets = workout.loggedSets + [newLoggedSet]
@@ -234,12 +243,26 @@ struct WorkoutDetailsView: View {
             workout.startDate = Date()
             refreshCachedWorkoutData()
         }
+        AppAnalytics.log(
+            AppAnalytics.Event.setLogged,
+            parameters: [
+                AppAnalytics.Param.setCount: newLoggedSet.sets.count,
+                AppAnalytics.Param.loggedSetCount: workout.loggedSets.count
+            ]
+        )
+        AppAnalytics.log(
+            AppAnalytics.Event.workoutCompleted,
+            parameters: [
+                AppAnalytics.Param.setCount: newLoggedSet.sets.count,
+                AppAnalytics.Param.loggedSetCount: workout.loggedSets.count
+            ]
+        )
         AppReviewRequester.recordCompletedWorkoutAndRequestIfAppropriate()
     }
 
     @MainActor
     private func updateCurrentSets(_ updatedSets: [Workout.Set]) {
-        var transaction = workoutLayoutTransaction
+        let transaction = workoutLayoutTransaction
 
         withTransaction(transaction) {
             visibleSets = updatedSets
@@ -262,6 +285,22 @@ struct WorkoutDetailsView: View {
     private func refreshCachedWorkoutData() {
         cachedMatchingLoggedSets = makeMatchingLoggedSets()
         cachedProgressPoints = makeWorkoutProgressPoints()
+    }
+
+    private func logWorkoutStartedIfNeeded() {
+        guard !didLogWorkoutStarted else {
+            return
+        }
+
+        didLogWorkoutStarted = true
+        AppAnalytics.log(
+            AppAnalytics.Event.workoutStarted,
+            parameters: [
+                AppAnalytics.Param.source: "workout_detail",
+                AppAnalytics.Param.hasActiveSets: !workout.sets.isEmpty,
+                AppAnalytics.Param.loggedSetCount: workout.loggedSets.count
+            ]
+        )
     }
 
     private func makeMatchingLoggedSets() -> [Workout.LoggedSet] {

@@ -26,6 +26,10 @@ struct ContentView: View {
             }
         }
         .environmentObject(UserData.shared)
+        .onAppear {
+            AppAnalytics.logAppOpened(platform: "watch")
+            AppAnalytics.logAppleWatchOpened()
+        }
     }
 }
 

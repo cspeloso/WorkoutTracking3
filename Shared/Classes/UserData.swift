@@ -728,6 +728,10 @@ extension UserData: WCSessionDelegate {
     }
 
     private func handleWatchConnectivityPayload(_ payload: [String: Any], source: String) {
+        if AppAnalytics.handleWatchConnectivityPayload(payload) {
+            return
+        }
+
         if payload["requestUserDataSync"] as? Bool == true {
             sendToPairedDevice()
             return

@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct WorkoutTracking3App: App {
+    init() {
+        AppAnalytics.configureIfNeeded()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

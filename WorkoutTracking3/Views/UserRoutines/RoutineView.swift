@@ -256,6 +256,14 @@ struct RoutineView: View {
         }
         let routine = Routine(name: template.title, weekday: template.weekday, workouts: workouts)
         userData.routines.append(routine)
+        AppAnalytics.log(
+            AppAnalytics.Event.templateCreated,
+            parameters: [
+                AppAnalytics.Param.templateTitle: template.title,
+                AppAnalytics.Param.workoutCount: workouts.count,
+                AppAnalytics.Param.routineCount: userData.routines.count
+            ]
+        )
         activeRoutineID = routine.id
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

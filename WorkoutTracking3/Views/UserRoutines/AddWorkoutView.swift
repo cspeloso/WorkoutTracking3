@@ -85,11 +85,23 @@ struct AddWorkoutView: View {
         let workout = Workout(name: name, sets: [], loggedSets: [])
         workouts.append(workout)
         createdWorkoutID = workout.id
+        logWorkoutCreated(named: name)
         
         let impact = UIImpactFeedbackGenerator(style: .medium)
         impact.impactOccurred()
         
         mode.wrappedValue.dismiss()
+    }
+
+    private func logWorkoutCreated(named name: String) {
+        let source = exercises.contains { $0.name.caseInsensitiveCompare(name) == .orderedSame } ? "exercise_library" : "custom_exercise"
+        let parameters: [String: Any] = [
+            AppAnalytics.Param.source: source,
+            AppAnalytics.Param.workoutCount: workouts.count
+        ]
+
+        AppAnalytics.log(AppAnalytics.Event.workoutCreated, parameters: parameters)
+        AppAnalytics.log(AppAnalytics.Event.exerciseAdded, parameters: parameters)
     }
 }
 
