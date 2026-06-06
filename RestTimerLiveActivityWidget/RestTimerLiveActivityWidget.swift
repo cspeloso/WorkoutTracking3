@@ -52,11 +52,14 @@ struct RestTimerLiveActivityWidget: Widget {
                 }
             } compactLeading: {
                 Image(systemName: "timer")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(LiveActivityColors.accent)
             } compactTrailing: {
-                RestTimerLiveActivityTimeView(context: context, size: 14)
+                RestTimerLiveActivityTimeView(context: context, size: 15)
+                    .frame(width: 44, alignment: .trailing)
             } minimal: {
                 Image(systemName: "timer")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundStyle(LiveActivityColors.accent)
             }
         }
