@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct WorkoutDetailsView: View {
 
@@ -19,6 +20,10 @@ struct WorkoutDetailsView: View {
     @State private var cachedMatchingLoggedSets: [Workout.LoggedSet] = []
     @State private var cachedProgressPoints: [ProgressPoint] = []
     @State private var didLogWorkoutStarted = false
+    @State private var timerRemainingSeconds = 0
+    @State private var isTimerRunning = false
+
+    private let restTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var suggestedSet: Workout.Set {
         if let currentSet = visibleSets.last {
@@ -75,6 +80,25 @@ struct WorkoutDetailsView: View {
                         initialReps: suggestedSet.reps,
                         initialWeight: suggestedSet.weight,
                         onAddSet: addSet
+                    )
+
+                    RestTimerCard(
+                        interval: Binding(
+                            get: { Int(workout.restTimerInterval) },
+                            set: { newValue in
+                                let clampedValue = max(5, newValue)
+                                workout.restTimerInterval = TimeInterval(clampedValue)
+                                if !isTimerRunning {
+                                    timerRemainingSeconds = clampedValue
+                                }
+                            }
+                        ),
+                        autoStartsOnAddSet: $workout.startsRestTimerOnAddSet,
+                        remainingSeconds: timerRemainingSeconds,
+                        isRunning: isTimerRunning,
+                        onStart: startRestTimer,
+                        onPause: pauseRestTimer,
+                        onReset: resetRestTimer
                     )
 
                     VStack(alignment: .leading, spacing: 14) {
@@ -191,6 +215,7 @@ struct WorkoutDetailsView: View {
         }
         .onAppear {
             visibleSets = workout.sets
+            timerRemainingSeconds = Int(workout.restTimerInterval)
             refreshCachedWorkoutData()
             haptic.prepare()
             logWorkoutStartedIfNeeded()
@@ -205,6 +230,9 @@ struct WorkoutDetailsView: View {
         }
         .onChange(of: selectedProgressRange) { _ in
             cachedProgressPoints = makeWorkoutProgressPoints()
+        }
+        .onReceive(restTimer) { _ in
+            tickRestTimer()
         }
     }
 
@@ -223,6 +251,10 @@ struct WorkoutDetailsView: View {
         }
         let updatedSets = visibleSets + [set]
         updateCurrentSets(updatedSets)
+
+        if workout.startsRestTimerOnAddSet {
+            startRestTimer()
+        }
     }
 
     @MainActor
@@ -241,6 +273,7 @@ struct WorkoutDetailsView: View {
             workout.sets = []
             visibleSets = []
             workout.startDate = Date()
+            resetRestTimer()
             refreshCachedWorkoutData()
         }
         AppAnalytics.log(
@@ -287,6 +320,63 @@ struct WorkoutDetailsView: View {
         cachedProgressPoints = makeWorkoutProgressPoints()
     }
 
+    private func startRestTimer() {
+        let interval = max(5, Int(workout.restTimerInterval))
+        if timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
+            timerRemainingSeconds = interval
+        }
+        isTimerRunning = true
+        updateLiveActivity(isPaused: false)
+    }
+
+    private func pauseRestTimer() {
+        isTimerRunning = false
+        updateLiveActivity(isPaused: true)
+    }
+
+    private func resetRestTimer() {
+        isTimerRunning = false
+        timerRemainingSeconds = max(5, Int(workout.restTimerInterval))
+        endLiveActivity()
+    }
+
+    private func tickRestTimer() {
+        guard isTimerRunning else {
+            return
+        }
+
+        if timerRemainingSeconds > 1 {
+            timerRemainingSeconds -= 1
+        } else {
+            timerRemainingSeconds = 0
+            isTimerRunning = false
+            endLiveActivity()
+            haptic.impactOccurred()
+            haptic.prepare()
+        }
+    }
+
+    private func updateLiveActivity(isPaused: Bool) {
+        guard #available(iOS 16.1, *) else {
+            return
+        }
+
+        RestTimerLiveActivityController.shared.startOrUpdate(
+            workoutName: workout.name,
+            intervalSeconds: max(5, Int(workout.restTimerInterval)),
+            remainingSeconds: timerRemainingSeconds,
+            isPaused: isPaused
+        )
+    }
+
+    private func endLiveActivity() {
+        guard #available(iOS 16.1, *) else {
+            return
+        }
+
+        RestTimerLiveActivityController.shared.end(remainingSeconds: timerRemainingSeconds)
+    }
+
     private func logWorkoutStartedIfNeeded() {
         guard !didLogWorkoutStarted else {
             return
@@ -323,6 +413,83 @@ struct WorkoutDetailsView: View {
             includeActiveSets: false,
             currentWorkout: workout
         )
+    }
+}
+
+private struct RestTimerCard: View {
+    @Binding var interval: Int
+    @Binding var autoStartsOnAddSet: Bool
+    let remainingSeconds: Int
+    let isRunning: Bool
+    let onStart: () -> Void
+    let onPause: () -> Void
+    let onReset: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Rest Timer")
+                        .font(.title3.weight(.black))
+
+                    Text(formatTime(interval))
+                        .font(.caption.weight(.black))
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Text(formatTime(remainingSeconds))
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            Stepper(value: $interval, in: 5...600, step: 15) {
+                Label("Duration", systemImage: "timer")
+                    .font(.headline.weight(.bold))
+            }
+
+            Toggle(isOn: $autoStartsOnAddSet) {
+                Label("Start after Add Set", systemImage: "play.circle.fill")
+                    .font(.headline.weight(.bold))
+            }
+            .tint(AppColors.accent)
+
+            HStack(spacing: 10) {
+                Button(action: isRunning ? onPause : onStart) {
+                    Label(isRunning ? "Pause" : "Start", systemImage: isRunning ? "pause.fill" : "play.fill")
+                        .font(.headline.weight(.black))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .foregroundColor(.white)
+                        .background(AppColors.accent)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onReset) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.headline.weight(.black))
+                        .frame(width: 52, height: 48)
+                        .background(AppColors.elevated)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Reset timer")
+            }
+        }
+        .padding(18)
+        .background(AppColors.card)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+        .cornerRadius(8)
+    }
+
+    private func formatTime(_ seconds: Int) -> String {
+        let minutes = max(0, seconds) / 60
+        let seconds = max(0, seconds) % 60
+        return "\(minutes):\(String(format: "%02d", seconds))"
     }
 }
 

@@ -72,6 +72,11 @@
 		83CA774227FA5EDD0027B144 /* NewListSets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83CA774127FA5EDD0027B144 /* NewListSets.swift */; };
 		83DA14E527E408300070B3C5 /* LoggedSetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DA14E427E408300070B3C5 /* LoggedSetsView.swift */; };
 		83F118FB27FBE1C600082A10 /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F118FA27FBE1C600082A10 /* TestView.swift */; };
+		AA0000030000000000000000 /* RestTimerActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000000 /* RestTimerActivityAttributes.swift */; };
+		AA0000040000000000000000 /* RestTimerActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000000 /* RestTimerActivityAttributes.swift */; };
+		AA0000060000000000000000 /* RestTimerLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000050000000000000000 /* RestTimerLiveActivityController.swift */; };
+		AA0000080000000000000000 /* RestTimerLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000070000000000000000 /* RestTimerLiveActivityWidget.swift */; };
+		AA0000110000000000000000 /* RestTimerLiveActivityWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = AA0000010000000000000000 /* RestTimerLiveActivityWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +86,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 837BF34B2B51A86300EAD0F2;
 			remoteInfo = "Work It Out Apple Watch Watch App";
+		};
+		AA0000130000000000000000 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 830B573227D9B53C003A067E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA00000D0000000000000000;
+			remoteInfo = RestTimerLiveActivityWidget;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -94,6 +106,17 @@
 				837BF3592B51A86400EAD0F2 /* Work It Out.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000120000000000000000 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AA0000110000000000000000 /* RestTimerLiveActivityWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -155,6 +178,11 @@
 		83CA774127FA5EDD0027B144 /* NewListSets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewListSets.swift; sourceTree = "<group>"; };
 		83DA14E427E408300070B3C5 /* LoggedSetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedSetsView.swift; sourceTree = "<group>"; };
 		83F118FA27FBE1C600082A10 /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
+		AA0000010000000000000000 /* RestTimerLiveActivityWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RestTimerLiveActivityWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000020000000000000000 /* RestTimerActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerActivityAttributes.swift; sourceTree = "<group>"; };
+		AA0000050000000000000000 /* RestTimerLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivityController.swift; sourceTree = "<group>"; };
+		AA0000070000000000000000 /* RestTimerLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivityWidget.swift; sourceTree = "<group>"; };
+		AA0000150000000000000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +202,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA00000B0000000000000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -183,6 +218,7 @@
 				837BF3712B51AECD00EAD0F2 /* Shared */,
 				830B573C27D9B53C003A067E /* WorkoutTracking3 */,
 				837BF34D2B51A86300EAD0F2 /* Apple Watch App */,
+				AA0000090000000000000000 /* RestTimerLiveActivityWidget */,
 				830B573B27D9B53C003A067E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -192,6 +228,7 @@
 			children = (
 				830B573A27D9B53C003A067E /* Work It Out.app */,
 				837BF34C2B51A86300EAD0F2 /* Work It Out.app */,
+				AA0000010000000000000000 /* RestTimerLiveActivityWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -202,6 +239,7 @@
 				830DC0C72CED8CC50080680C /* WorkoutTracking3.entitlements */,
 				830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */,
 				830B574127D9B53D003A067E /* Assets.xcassets */,
+				AA0000160000000000000000 /* LiveActivities */,
 				830B574327D9B53D003A067E /* Preview Content */,
 				830B574E27D9B58D003A067E /* Views */,
 			);
@@ -355,6 +393,7 @@
 				837BF3762B51AF2A00EAD0F2 /* Routine.swift */,
 				837BF3782B51AF3D00EAD0F2 /* Workout.swift */,
 				837BF37A2B51AF4C00EAD0F2 /* Exercise.swift */,
+				AA0000020000000000000000 /* RestTimerActivityAttributes.swift */,
 			);
 			path = Structs;
 			sourceTree = "<group>";
@@ -415,6 +454,23 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
+		AA0000090000000000000000 /* RestTimerLiveActivityWidget */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000070000000000000000 /* RestTimerLiveActivityWidget.swift */,
+				AA0000150000000000000000 /* Info.plist */,
+			);
+			path = RestTimerLiveActivityWidget;
+			sourceTree = "<group>";
+		};
+		AA0000160000000000000000 /* LiveActivities */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000050000000000000000 /* RestTimerLiveActivityController.swift */,
+			);
+			path = LiveActivities;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -425,6 +481,7 @@
 				830B573627D9B53C003A067E /* Sources */,
 				830B573727D9B53C003A067E /* Frameworks */,
 				830B573827D9B53C003A067E /* Resources */,
+				AA0000120000000000000000 /* Embed App Extensions */,
 				837BF35A2B51A86400EAD0F2 /* Embed Watch Content */,
 				8364A0D92FBD00000508375 /* Upload Crashlytics Symbols */,
 			);
@@ -432,6 +489,7 @@
 			);
 			dependencies = (
 				837BF3582B51A86400EAD0F2 /* PBXTargetDependency */,
+				AA0000140000000000000000 /* PBXTargetDependency */,
 			);
 			name = WorkoutTracking3;
 			productName = WorkoutTracking3;
@@ -455,6 +513,23 @@
 			productReference = 837BF34C2B51A86300EAD0F2 /* Work It Out.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AA00000D0000000000000000 /* RestTimerLiveActivityWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA00000E0000000000000000 /* Build configuration list for PBXNativeTarget "RestTimerLiveActivityWidget" */;
+			buildPhases = (
+				AA00000A0000000000000000 /* Sources */,
+				AA00000B0000000000000000 /* Frameworks */,
+				AA00000C0000000000000000 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RestTimerLiveActivityWidget;
+			productName = RestTimerLiveActivityWidget;
+			productReference = AA0000010000000000000000 /* RestTimerLiveActivityWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -470,6 +545,9 @@
 					};
 					837BF34B2B51A86300EAD0F2 = {
 						CreatedOnToolsVersion = 15.2;
+					};
+					AA00000D0000000000000000 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -491,6 +569,7 @@
 			targets = (
 				830B573927D9B53C003A067E /* WorkoutTracking3 */,
 				837BF34B2B51A86300EAD0F2 /* Work It Out Apple Watch Watch App */,
+				AA00000D0000000000000000 /* RestTimerLiveActivityWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -517,6 +596,13 @@
 				8364A0CF2FBC0BB900508375 /* GoogleService-Info.plist in Resources */,
 				837BF3832B51B01800EAD0F2 /* exercises.json in Resources */,
 				837BF3862B51B02500EAD0F2 /* userCreatedExercises.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA00000C0000000000000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -561,6 +647,7 @@
 				830B576E27D9C5D5003A067E /* ListSets.swift in Sources */,
 				830B576627D9BB61003A067E /* WorkoutDetailsView.swift in Sources */,
 				831371B82806096000B4934E /* NewSetCreator2.swift in Sources */,
+				AA0000060000000000000000 /* RestTimerLiveActivityController.swift in Sources */,
 				832007652AF0CE060070F906 /* MostRecentLoggedSetView.swift in Sources */,
 				83DA14E527E408300070B3C5 /* LoggedSetsView.swift in Sources */,
 				83205AA827E5584C0069C134 /* LoggedSetEditView.swift in Sources */,
@@ -571,6 +658,7 @@
 				830B576427D9B897003A067E /* AddRoutine.swift in Sources */,
 				830B573E27D9B53C003A067E /* WorkoutTracking3App.swift in Sources */,
 				8364A0D62FBD00000508375 /* AnalyticsService.swift in Sources */,
+				AA0000030000000000000000 /* RestTimerActivityAttributes.swift in Sources */,
 				830B576C27D9C0A8003A067E /* NewSetCreator.swift in Sources */,
 				837BF3882B51B1B400EAD0F2 /* Bundle-Decodable.swift in Sources */,
 				837BF37F2B51AFE100EAD0F2 /* UserData.swift in Sources */,
@@ -615,6 +703,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA00000A0000000000000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000040000000000000000 /* RestTimerActivityAttributes.swift in Sources */,
+				AA0000080000000000000000 /* RestTimerLiveActivityWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -622,6 +719,11 @@
 			isa = PBXTargetDependency;
 			target = 837BF34B2B51A86300EAD0F2 /* Work It Out Apple Watch Watch App */;
 			targetProxy = 837BF3572B51A86400EAD0F2 /* PBXContainerItemProxy */;
+		};
+		AA0000140000000000000000 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA00000D0000000000000000 /* RestTimerLiveActivityWidget */;
+			targetProxy = AA0000130000000000000000 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -760,6 +862,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -791,6 +894,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -877,6 +981,59 @@
 			};
 			name = Release;
 		};
+		AA00000F0000000000000000 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2.0.3;
+				DEVELOPMENT_TEAM = 7XUBHHGFL9;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RestTimerLiveActivityWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3.RestTimerLiveActivityWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA0000100000000000000000 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2.0.3;
+				DEVELOPMENT_TEAM = 7XUBHHGFL9;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = RestTimerLiveActivityWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3.RestTimerLiveActivityWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -903,6 +1060,15 @@
 			buildConfigurations = (
 				837BF35B2B51A86400EAD0F2 /* Debug */,
 				837BF35C2B51A86400EAD0F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA00000E0000000000000000 /* Build configuration list for PBXNativeTarget "RestTimerLiveActivityWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000F0000000000000000 /* Debug */,
+				AA0000100000000000000000 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

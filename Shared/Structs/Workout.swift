@@ -17,16 +17,27 @@ struct Workout: Identifiable, Codable, Equatable {
     
     
     var loggedSets: [LoggedSet]
+    var restTimerInterval: TimeInterval
+    var startsRestTimerOnAddSet: Bool
     
     enum CodingKeys: CodingKey {
-        case id, name, sets, loggedSets, startDate
+        case id, name, sets, loggedSets, startDate, restTimerInterval, startsRestTimerOnAddSet
     }
     
-    init(name: String, sets: [Workout.Set], loggedSets: [LoggedSet], startDate: Date = Date()){
+    init(
+        name: String,
+        sets: [Workout.Set],
+        loggedSets: [LoggedSet],
+        startDate: Date = Date(),
+        restTimerInterval: TimeInterval = 90,
+        startsRestTimerOnAddSet: Bool = false
+    ){
         self.name = name
         self.sets = sets
         self.loggedSets = loggedSets
         self.startDate = startDate
+        self.restTimerInterval = restTimerInterval
+        self.startsRestTimerOnAddSet = startsRestTimerOnAddSet
     }
     
     init(from decoder: Decoder) throws {
@@ -44,6 +55,9 @@ struct Workout: Identifiable, Codable, Equatable {
         else {
             startDate = Date()
         }
+
+        restTimerInterval = (try? container.decode(TimeInterval.self, forKey: .restTimerInterval)) ?? 90
+        startsRestTimerOnAddSet = (try? container.decode(Bool.self, forKey: .startsRestTimerOnAddSet)) ?? false
     }
     
     func encode(to encoder: Encoder) throws {
@@ -54,6 +68,8 @@ struct Workout: Identifiable, Codable, Equatable {
         try container.encode(sets, forKey: .sets)
         try container.encode(loggedSets, forKey: .loggedSets)
         try container.encode(startDate, forKey: .startDate)
+        try container.encode(restTimerInterval, forKey: .restTimerInterval)
+        try container.encode(startsRestTimerOnAddSet, forKey: .startsRestTimerOnAddSet)
     }
     
     func getStartDateStr() -> String {
@@ -83,7 +99,9 @@ struct Workout: Identifiable, Codable, Equatable {
         return lhs.name == rhs.name &&
             lhs.sets == rhs.sets &&
             lhs.loggedSets == rhs.loggedSets &&
-            lhs.startDate == rhs.startDate
+            lhs.startDate == rhs.startDate &&
+            lhs.restTimerInterval == rhs.restTimerInterval &&
+            lhs.startsRestTimerOnAddSet == rhs.startsRestTimerOnAddSet
     }
     
     

@@ -7,14 +7,18 @@
 
 import SwiftUI
 import WatchKit
+import Combine
 
 struct WorkoutDetailsView: View {
     
     @Binding var workout: Workout
     @State private var showAlert = false
     @State private var navigateToHistory = false
+    @State private var timerRemainingSeconds = 0
+    @State private var isTimerRunning = false
     
     private let exercises: [Exercise] = Bundle.main.decode("exercises.json")
+    private let restTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Form {
@@ -34,6 +38,36 @@ struct WorkoutDetailsView: View {
                 )
             } header: {
                 Text("Add new sets")
+            }
+
+            Section {
+                VStack(spacing: 10) {
+                    Text(formatTimer(timerRemainingSeconds))
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .frame(maxWidth: .infinity)
+
+                    Stepper(value: restTimerIntervalBinding, in: 5...600, step: 15) {
+                        Text("Rest \(formatTimer(Int(workout.restTimerInterval)))")
+                    }
+
+                    Toggle("Auto-start", isOn: $workout.startsRestTimerOnAddSet)
+
+                    HStack {
+                        Button(isTimerRunning ? "Pause" : "Start") {
+                            isTimerRunning ? pauseRestTimer() : startRestTimer()
+                        }
+
+                        Button {
+                            resetRestTimer()
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                        }
+                        .accessibilityLabel("Reset timer")
+                    }
+                }
+            } header: {
+                Text("Rest Timer")
             }
             
             Section {
@@ -98,6 +132,12 @@ struct WorkoutDetailsView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .onAppear {
+            timerRemainingSeconds = Int(workout.restTimerInterval)
+        }
+        .onReceive(restTimer) { _ in
+            tickRestTimer()
+        }
     }
     
     @MainActor
@@ -113,6 +153,7 @@ struct WorkoutDetailsView: View {
         workout.loggedSets.append(newLoggedSet)
         workout.sets.removeAll()
         workout.startDate = Date()
+        resetRestTimer()
         WKInterfaceDevice.current().play(.success)
     }
 
@@ -121,6 +162,59 @@ struct WorkoutDetailsView: View {
         if workout.sets.count == 1 {
             workout.startDate = Date()
         }
+
+        if workout.startsRestTimerOnAddSet {
+            startRestTimer()
+        }
+    }
+
+    private var restTimerIntervalBinding: Binding<Int> {
+        Binding(
+            get: { Int(workout.restTimerInterval) },
+            set: { newValue in
+                workout.restTimerInterval = TimeInterval(max(5, newValue))
+                if !isTimerRunning {
+                    timerRemainingSeconds = Int(workout.restTimerInterval)
+                }
+            }
+        )
+    }
+
+    private func startRestTimer() {
+        let interval = max(5, Int(workout.restTimerInterval))
+        if timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
+            timerRemainingSeconds = interval
+        }
+        isTimerRunning = true
+    }
+
+    private func pauseRestTimer() {
+        isTimerRunning = false
+    }
+
+    private func resetRestTimer() {
+        isTimerRunning = false
+        timerRemainingSeconds = max(5, Int(workout.restTimerInterval))
+    }
+
+    private func tickRestTimer() {
+        guard isTimerRunning else {
+            return
+        }
+
+        if timerRemainingSeconds > 1 {
+            timerRemainingSeconds -= 1
+        } else {
+            timerRemainingSeconds = 0
+            isTimerRunning = false
+            WKInterfaceDevice.current().play(.notification)
+        }
+    }
+
+    private func formatTimer(_ seconds: Int) -> String {
+        let minutes = max(0, seconds) / 60
+        let seconds = max(0, seconds) % 60
+        return "\(minutes):\(String(format: "%02d", seconds))"
     }
 }
 
