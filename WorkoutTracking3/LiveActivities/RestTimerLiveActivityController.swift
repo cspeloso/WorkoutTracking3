@@ -20,6 +20,7 @@ final class RestTimerLiveActivityController {
         workoutName: String,
         intervalSeconds: Int,
         remainingSeconds: Int,
+        endsAt: Date,
         isPaused: Bool
     ) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
@@ -27,7 +28,7 @@ final class RestTimerLiveActivityController {
         }
 
         let state = RestTimerActivityAttributes.ContentState(
-            endsAt: Date().addingTimeInterval(TimeInterval(max(0, remainingSeconds))),
+            endsAt: endsAt,
             remainingSeconds: max(0, remainingSeconds),
             isPaused: isPaused
         )

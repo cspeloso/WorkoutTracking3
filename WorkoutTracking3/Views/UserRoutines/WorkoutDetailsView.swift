@@ -22,6 +22,7 @@ struct WorkoutDetailsView: View {
     @State private var didLogWorkoutStarted = false
     @State private var timerRemainingSeconds = 0
     @State private var isTimerRunning = false
+    @State private var timerEndsAt: Date?
 
     private let restTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -96,7 +97,7 @@ struct WorkoutDetailsView: View {
                         autoStartsOnAddSet: $workout.startsRestTimerOnAddSet,
                         remainingSeconds: timerRemainingSeconds,
                         isRunning: isTimerRunning,
-                        onStart: startRestTimer,
+                        onStart: { startRestTimer() },
                         onPause: pauseRestTimer,
                         onReset: resetRestTimer
                     )
@@ -253,7 +254,7 @@ struct WorkoutDetailsView: View {
         updateCurrentSets(updatedSets)
 
         if workout.startsRestTimerOnAddSet {
-            startRestTimer()
+            startRestTimer(resetToInterval: true)
         }
     }
 
@@ -320,16 +321,19 @@ struct WorkoutDetailsView: View {
         cachedProgressPoints = makeWorkoutProgressPoints()
     }
 
-    private func startRestTimer() {
+    private func startRestTimer(resetToInterval: Bool = false) {
         let interval = max(5, Int(workout.restTimerInterval))
-        if timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
+        if resetToInterval || timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
             timerRemainingSeconds = interval
         }
+        timerEndsAt = Date().addingTimeInterval(TimeInterval(timerRemainingSeconds))
         isTimerRunning = true
         updateLiveActivity(isPaused: false)
     }
 
     private func pauseRestTimer() {
+        updateRemainingSecondsFromEndDate()
+        timerEndsAt = nil
         isTimerRunning = false
         updateLiveActivity(isPaused: true)
     }
@@ -337,6 +341,7 @@ struct WorkoutDetailsView: View {
     private func resetRestTimer() {
         isTimerRunning = false
         timerRemainingSeconds = max(5, Int(workout.restTimerInterval))
+        timerEndsAt = nil
         endLiveActivity()
     }
 
@@ -345,15 +350,24 @@ struct WorkoutDetailsView: View {
             return
         }
 
-        if timerRemainingSeconds > 1 {
-            timerRemainingSeconds -= 1
-        } else {
+        updateRemainingSecondsFromEndDate()
+
+        if timerRemainingSeconds <= 0 {
             timerRemainingSeconds = 0
             isTimerRunning = false
+            timerEndsAt = nil
             endLiveActivity()
             haptic.impactOccurred()
             haptic.prepare()
         }
+    }
+
+    private func updateRemainingSecondsFromEndDate() {
+        guard let timerEndsAt else {
+            return
+        }
+
+        timerRemainingSeconds = max(0, Int(ceil(timerEndsAt.timeIntervalSinceNow)))
     }
 
     private func updateLiveActivity(isPaused: Bool) {
@@ -361,10 +375,12 @@ struct WorkoutDetailsView: View {
             return
         }
 
+        let endsAt = timerEndsAt ?? Date().addingTimeInterval(TimeInterval(timerRemainingSeconds))
         RestTimerLiveActivityController.shared.startOrUpdate(
             workoutName: workout.name,
             intervalSeconds: max(5, Int(workout.restTimerInterval)),
             remainingSeconds: timerRemainingSeconds,
+            endsAt: endsAt,
             isPaused: isPaused
         )
     }
