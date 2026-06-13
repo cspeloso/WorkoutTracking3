@@ -89,6 +89,25 @@ struct SettingsView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 14) {
+                        SectionTitle("Timers")
+                        VStack(alignment: .leading, spacing: 12) {
+                            Toggle(isOn: $userData.restTimerAlertEnabled) {
+                                Label("Rest Timer Alert", systemImage: "bell.fill")
+                                    .font(.headline.weight(.black))
+                            }
+                            .tint(AppColors.accent)
+
+                            Text("Play an alert when a workout rest timer reaches 0:00.")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(18)
+                        .background(AppColors.card)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
+                        .cornerRadius(8)
+                    }
+
+                    VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Data")
                         VStack(spacing: 12) {
                             SettingsActionButton(title: "Download your data", systemImage: "square.and.arrow.down") {

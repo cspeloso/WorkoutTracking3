@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import AudioToolbox
 
 struct WorkoutDetailsView: View {
 
@@ -16,6 +17,8 @@ struct WorkoutDetailsView: View {
     @State private var navigateToHistory = false
     @State private var visibleSets: [Workout.Set] = []
     @State private var haptic = UIImpactFeedbackGenerator(style: .heavy)
+    @State private var timerControlHaptic = UIImpactFeedbackGenerator(style: .light)
+    @State private var timerCompletionHaptic = UINotificationFeedbackGenerator()
     @State private var selectedProgressRange: ProgressRange = .oneMonth
     @State private var cachedMatchingLoggedSets: [Workout.LoggedSet] = []
     @State private var cachedProgressPoints: [ProgressPoint] = []
@@ -85,9 +88,9 @@ struct WorkoutDetailsView: View {
 
                     RestTimerCard(
                         interval: Binding(
-                            get: { Int(workout.restTimerInterval) },
+                            get: { normalizedRestTimerInterval(Int(workout.restTimerInterval)) },
                             set: { newValue in
-                                let clampedValue = max(5, newValue)
+                                let clampedValue = normalizedRestTimerInterval(newValue)
                                 workout.restTimerInterval = TimeInterval(clampedValue)
                                 if !isTimerRunning {
                                     timerRemainingSeconds = clampedValue
@@ -97,6 +100,7 @@ struct WorkoutDetailsView: View {
                         autoStartsOnAddSet: $workout.startsRestTimerOnAddSet,
                         remainingSeconds: timerRemainingSeconds,
                         isRunning: isTimerRunning,
+                        onControlTap: playTimerControlHaptic,
                         onStart: { startRestTimer() },
                         onPause: pauseRestTimer,
                         onReset: resetRestTimer
@@ -216,9 +220,12 @@ struct WorkoutDetailsView: View {
         }
         .onAppear {
             visibleSets = workout.sets
-            timerRemainingSeconds = Int(workout.restTimerInterval)
+            workout.restTimerInterval = TimeInterval(normalizedRestTimerInterval(Int(workout.restTimerInterval)))
+            timerRemainingSeconds = normalizedRestTimerInterval(Int(workout.restTimerInterval))
             refreshCachedWorkoutData()
             haptic.prepare()
+            timerControlHaptic.prepare()
+            timerCompletionHaptic.prepare()
             logWorkoutStartedIfNeeded()
         }
         .onChange(of: workout.sets) { newSets in
@@ -322,7 +329,7 @@ struct WorkoutDetailsView: View {
     }
 
     private func startRestTimer(resetToInterval: Bool = false) {
-        let interval = max(5, Int(workout.restTimerInterval))
+        let interval = normalizedRestTimerInterval(Int(workout.restTimerInterval))
         if resetToInterval || timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
             timerRemainingSeconds = interval
         }
@@ -340,7 +347,7 @@ struct WorkoutDetailsView: View {
 
     private func resetRestTimer() {
         isTimerRunning = false
-        timerRemainingSeconds = max(5, Int(workout.restTimerInterval))
+        timerRemainingSeconds = normalizedRestTimerInterval(Int(workout.restTimerInterval))
         timerEndsAt = nil
         endLiveActivity()
     }
@@ -357,8 +364,7 @@ struct WorkoutDetailsView: View {
             isTimerRunning = false
             timerEndsAt = nil
             endLiveActivity()
-            haptic.impactOccurred()
-            haptic.prepare()
+            playRestTimerCompletionAlert()
         }
     }
 
@@ -378,11 +384,33 @@ struct WorkoutDetailsView: View {
         let endsAt = timerEndsAt ?? Date().addingTimeInterval(TimeInterval(timerRemainingSeconds))
         RestTimerLiveActivityController.shared.startOrUpdate(
             workoutName: workout.name,
-            intervalSeconds: max(5, Int(workout.restTimerInterval)),
+            intervalSeconds: normalizedRestTimerInterval(Int(workout.restTimerInterval)),
             remainingSeconds: timerRemainingSeconds,
             endsAt: endsAt,
             isPaused: isPaused
         )
+    }
+
+    private func normalizedRestTimerInterval(_ seconds: Int) -> Int {
+        seconds >= 15 && seconds <= 600 && seconds % 15 == 0 ? seconds : 60
+    }
+
+    private func playTimerControlHaptic() {
+        timerControlHaptic.impactOccurred(intensity: 0.65)
+        timerControlHaptic.prepare()
+    }
+
+    private func playRestTimerCompletionAlert() {
+        haptic.impactOccurred()
+        haptic.prepare()
+
+        guard userData.restTimerAlertEnabled else {
+            return
+        }
+
+        timerCompletionHaptic.notificationOccurred(.success)
+        timerCompletionHaptic.prepare()
+        AudioServicesPlayAlertSound(1005)
     }
 
     private func endLiveActivity() {
@@ -437,6 +465,7 @@ private struct RestTimerCard: View {
     @Binding var autoStartsOnAddSet: Bool
     let remainingSeconds: Int
     let isRunning: Bool
+    let onControlTap: () -> Void
     let onStart: () -> Void
     let onPause: () -> Void
     let onReset: () -> Void
@@ -462,9 +491,12 @@ private struct RestTimerCard: View {
                     .minimumScaleFactor(0.7)
             }
 
-            Stepper(value: $interval, in: 5...600, step: 15) {
+            Stepper(value: $interval, in: 15...600, step: 15) {
                 Label("Duration", systemImage: "timer")
                     .font(.headline.weight(.bold))
+            }
+            .onChange(of: interval) { _ in
+                onControlTap()
             }
 
             Toggle(isOn: $autoStartsOnAddSet) {
@@ -472,9 +504,15 @@ private struct RestTimerCard: View {
                     .font(.headline.weight(.bold))
             }
             .tint(AppColors.accent)
+            .onChange(of: autoStartsOnAddSet) { _ in
+                onControlTap()
+            }
 
             HStack(spacing: 10) {
-                Button(action: isRunning ? onPause : onStart) {
+                Button {
+                    onControlTap()
+                    isRunning ? onPause() : onStart()
+                } label: {
                     Label(isRunning ? "Pause" : "Start", systemImage: isRunning ? "pause.fill" : "play.fill")
                         .font(.headline.weight(.black))
                         .frame(maxWidth: .infinity)
@@ -485,7 +523,10 @@ private struct RestTimerCard: View {
                 }
                 .buttonStyle(.plain)
 
-                Button(action: onReset) {
+                Button {
+                    onControlTap()
+                    onReset()
+                } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.headline.weight(.black))
                         .frame(width: 52, height: 48)

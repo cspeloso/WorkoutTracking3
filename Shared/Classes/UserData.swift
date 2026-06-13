@@ -15,10 +15,12 @@ final class UserData: NSObject, ObservableObject, Codable {
     private static let routinesCloudKey = "UserDataRoutines"
     private static let routinesUpdatedAtKey = "UserDataRoutinesUpdatedAt"
     private static let weightUnitKey = "UserDataWeightUnit"
+    private static let restTimerAlertEnabledKey = "UserDataRestTimerAlertEnabled"
     private static let legacyLocalKey = "UserDataFirstAttempt"
     private static let watchConnectivityRoutinesKey = "routinesData"
     private static let watchConnectivityUpdatedAtKey = "routinesUpdatedAt"
     private static let watchConnectivityWeightUnitKey = "weightUnit"
+    private static let watchConnectivityRestTimerAlertEnabledKey = "restTimerAlertEnabled"
     private static let deletedRoutinesBackupKey = "DeletedUserDataRoutinesBackup"
     private static let deletedRoutinesBackupCreatedAtKey = "DeletedUserDataRoutinesBackupCreatedAt"
     private static let deletedRoutinesBackupRetention: TimeInterval = 30 * 24 * 60 * 60
@@ -34,6 +36,13 @@ final class UserData: NSObject, ObservableObject, Codable {
         didSet {
             if oldValue != weightUnit && !isApplyingRemoteSettingsUpdate {
                 saveWeightUnit()
+            }
+        }
+    }
+    @Published var restTimerAlertEnabled: Bool {
+        didSet {
+            if oldValue != restTimerAlertEnabled && !isApplyingRemoteSettingsUpdate {
+                saveRestTimerAlertEnabled()
             }
         }
     }
@@ -55,6 +64,7 @@ final class UserData: NSObject, ObservableObject, Codable {
         self.routines = []
         self.deletedDataBackupInfo = nil
         self.weightUnit = Self.loadWeightUnit()
+        self.restTimerAlertEnabled = Self.loadRestTimerAlertEnabled()
         super.init()
 
         print("UserData singleton init at \(Date())")
@@ -96,6 +106,7 @@ final class UserData: NSObject, ObservableObject, Codable {
         self.routines = try container.decode([Routine].self, forKey: .routines)
         self.deletedDataBackupInfo = nil
         self.weightUnit = .pounds
+        self.restTimerAlertEnabled = true
         super.init()
     }
 
@@ -112,13 +123,15 @@ final class UserData: NSObject, ObservableObject, Codable {
         let routinesSnapshot = routines
         let updatedAtSnapshot = lastUpdatedAt
         let weightUnitSnapshot = weightUnit
+        let restTimerAlertEnabledSnapshot = restTimerAlertEnabled
 
         saveToLocalDefaults(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
         saveToCloud(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
         sendToPairedDevice(
             routines: routinesSnapshot,
             updatedAt: updatedAtSnapshot,
-            weightUnit: weightUnitSnapshot
+            weightUnit: weightUnitSnapshot,
+            restTimerAlertEnabled: restTimerAlertEnabledSnapshot
         )
     }
 
@@ -212,6 +225,7 @@ final class UserData: NSObject, ObservableObject, Codable {
             print("iCloud user data changed")
             self.loadFromCloud()
             self.loadWeightUnitFromCloud()
+            self.loadRestTimerAlertEnabledFromCloud()
         }
     }
 
@@ -271,6 +285,7 @@ final class UserData: NSObject, ObservableObject, Codable {
         refreshDeletedDataBackupInfo()
         loadFromCloud()
         loadWeightUnitFromCloud()
+        loadRestTimerAlertEnabledFromCloud()
         requestPairedDeviceSync()
     }
 
@@ -527,6 +542,54 @@ extension UserData {
         isApplyingRemoteSettingsUpdate = false
         saveWeightUnit()
     }
+
+    private static func loadRestTimerAlertEnabled() -> Bool {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        if store.object(forKey: restTimerAlertEnabledKey) != nil {
+            let isEnabled = store.bool(forKey: restTimerAlertEnabledKey)
+            UserDefaults.standard.set(isEnabled, forKey: restTimerAlertEnabledKey)
+            return isEnabled
+        }
+
+        if UserDefaults.standard.object(forKey: restTimerAlertEnabledKey) != nil {
+            return UserDefaults.standard.bool(forKey: restTimerAlertEnabledKey)
+        }
+
+        return true
+    }
+
+    private func saveRestTimerAlertEnabled() {
+        let store = NSUbiquitousKeyValueStore.default
+        UserDefaults.standard.set(restTimerAlertEnabled, forKey: Self.restTimerAlertEnabledKey)
+        store.set(restTimerAlertEnabled, forKey: Self.restTimerAlertEnabledKey)
+        store.synchronize()
+        sendToPairedDevice()
+    }
+
+    private func loadRestTimerAlertEnabledFromCloud() {
+        let isEnabled = Self.loadRestTimerAlertEnabled()
+        guard isEnabled != restTimerAlertEnabled else {
+            return
+        }
+
+        isApplyingRemoteSettingsUpdate = true
+        restTimerAlertEnabled = isEnabled
+        isApplyingRemoteSettingsUpdate = false
+    }
+
+    private func applyRemoteRestTimerAlertEnabled(_ isEnabled: Bool?) {
+        guard let isEnabled,
+              isEnabled != restTimerAlertEnabled else {
+            return
+        }
+
+        isApplyingRemoteSettingsUpdate = true
+        restTimerAlertEnabled = isEnabled
+        isApplyingRemoteSettingsUpdate = false
+        saveRestTimerAlertEnabled()
+    }
 }
 
 struct DeletedDataBackupInfo {
@@ -681,10 +744,20 @@ extension UserData: WCSessionDelegate {
     }
 
     private func sendToPairedDevice() {
-        sendToPairedDevice(routines: routines, updatedAt: lastUpdatedAt, weightUnit: weightUnit)
+        sendToPairedDevice(
+            routines: routines,
+            updatedAt: lastUpdatedAt,
+            weightUnit: weightUnit,
+            restTimerAlertEnabled: restTimerAlertEnabled
+        )
     }
 
-    private func sendToPairedDevice(routines routinesSnapshot: [Routine], updatedAt updatedAtSnapshot: TimeInterval, weightUnit weightUnitSnapshot: WeightUnit) {
+    private func sendToPairedDevice(
+        routines routinesSnapshot: [Routine],
+        updatedAt updatedAtSnapshot: TimeInterval,
+        weightUnit weightUnitSnapshot: WeightUnit,
+        restTimerAlertEnabled restTimerAlertEnabledSnapshot: Bool
+    ) {
         guard let session else {
             return
         }
@@ -695,7 +768,8 @@ extension UserData: WCSessionDelegate {
                 let payload: [String: Any] = [
                     Self.watchConnectivityRoutinesKey: encoded,
                     Self.watchConnectivityUpdatedAtKey: updatedAtSnapshot,
-                    Self.watchConnectivityWeightUnitKey: weightUnitSnapshot.rawValue
+                    Self.watchConnectivityWeightUnitKey: weightUnitSnapshot.rawValue,
+                    Self.watchConnectivityRestTimerAlertEnabledKey: restTimerAlertEnabledSnapshot
                 ]
 
                 if session.activationState == .activated {
@@ -738,6 +812,7 @@ extension UserData: WCSessionDelegate {
         }
 
         applyRemoteWeightUnit(payload[Self.watchConnectivityWeightUnitKey] as? String)
+        applyRemoteRestTimerAlertEnabled(payload[Self.watchConnectivityRestTimerAlertEnabledKey] as? Bool)
 
         guard let data = payload[Self.watchConnectivityRoutinesKey] as? Data,
               let decoded = try? JSONDecoder().decode([Routine].self, from: data) else {
@@ -776,7 +851,8 @@ extension UserData: WCSessionDelegate {
             replyHandler([
                 Self.watchConnectivityRoutinesKey: encoded,
                 Self.watchConnectivityUpdatedAtKey: lastUpdatedAt,
-                Self.watchConnectivityWeightUnitKey: weightUnit.rawValue
+                Self.watchConnectivityWeightUnitKey: weightUnit.rawValue,
+                Self.watchConnectivityRestTimerAlertEnabledKey: restTimerAlertEnabled
             ])
             return
         }

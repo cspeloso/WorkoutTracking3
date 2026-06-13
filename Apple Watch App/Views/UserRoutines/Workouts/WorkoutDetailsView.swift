@@ -11,6 +11,7 @@ import Combine
 
 struct WorkoutDetailsView: View {
     
+    @EnvironmentObject private var userData: UserData
     @Binding var workout: Workout
     @State private var showAlert = false
     @State private var navigateToHistory = false
@@ -47,18 +48,23 @@ struct WorkoutDetailsView: View {
                         .monospacedDigit()
                         .frame(maxWidth: .infinity)
 
-                    Stepper(value: restTimerIntervalBinding, in: 5...600, step: 15) {
-                        Text("Rest \(formatTimer(Int(workout.restTimerInterval)))")
+                    Stepper(value: restTimerIntervalBinding, in: 15...600, step: 15) {
+                        Text("Rest \(formatTimer(restTimerIntervalBinding.wrappedValue))")
                     }
 
                     Toggle("Auto-start", isOn: $workout.startsRestTimerOnAddSet)
+                        .onChange(of: workout.startsRestTimerOnAddSet) { _ in
+                            playTimerControlHaptic()
+                        }
 
                     HStack {
                         Button(isTimerRunning ? "Pause" : "Start") {
+                            playTimerControlHaptic()
                             isTimerRunning ? pauseRestTimer() : startRestTimer()
                         }
 
                         Button {
+                            playTimerControlHaptic()
                             resetRestTimer()
                         } label: {
                             Image(systemName: "arrow.counterclockwise")
@@ -133,7 +139,8 @@ struct WorkoutDetailsView: View {
             )
         }
         .onAppear {
-            timerRemainingSeconds = Int(workout.restTimerInterval)
+            workout.restTimerInterval = TimeInterval(normalizedRestTimerInterval(Int(workout.restTimerInterval)))
+            timerRemainingSeconds = normalizedRestTimerInterval(Int(workout.restTimerInterval))
         }
         .onReceive(restTimer) { _ in
             tickRestTimer()
@@ -170,18 +177,19 @@ struct WorkoutDetailsView: View {
 
     private var restTimerIntervalBinding: Binding<Int> {
         Binding(
-            get: { Int(workout.restTimerInterval) },
+            get: { normalizedRestTimerInterval(Int(workout.restTimerInterval)) },
             set: { newValue in
-                workout.restTimerInterval = TimeInterval(max(5, newValue))
+                workout.restTimerInterval = TimeInterval(normalizedRestTimerInterval(newValue))
                 if !isTimerRunning {
                     timerRemainingSeconds = Int(workout.restTimerInterval)
                 }
+                playTimerControlHaptic()
             }
         )
     }
 
     private func startRestTimer() {
-        let interval = max(5, Int(workout.restTimerInterval))
+        let interval = normalizedRestTimerInterval(Int(workout.restTimerInterval))
         if timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
             timerRemainingSeconds = interval
         }
@@ -194,7 +202,15 @@ struct WorkoutDetailsView: View {
 
     private func resetRestTimer() {
         isTimerRunning = false
-        timerRemainingSeconds = max(5, Int(workout.restTimerInterval))
+        timerRemainingSeconds = normalizedRestTimerInterval(Int(workout.restTimerInterval))
+    }
+
+    private func normalizedRestTimerInterval(_ seconds: Int) -> Int {
+        seconds >= 15 && seconds <= 600 && seconds % 15 == 0 ? seconds : 60
+    }
+
+    private func playTimerControlHaptic() {
+        WKInterfaceDevice.current().play(.click)
     }
 
     private func tickRestTimer() {
@@ -207,7 +223,9 @@ struct WorkoutDetailsView: View {
         } else {
             timerRemainingSeconds = 0
             isTimerRunning = false
-            WKInterfaceDevice.current().play(.notification)
+            if userData.restTimerAlertEnabled {
+                WKInterfaceDevice.current().play(.notification)
+            }
         }
     }
 

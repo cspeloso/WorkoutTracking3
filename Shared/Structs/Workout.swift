@@ -29,7 +29,7 @@ struct Workout: Identifiable, Codable, Equatable {
         sets: [Workout.Set],
         loggedSets: [LoggedSet],
         startDate: Date = Date(),
-        restTimerInterval: TimeInterval = 90,
+        restTimerInterval: TimeInterval = 60,
         startsRestTimerOnAddSet: Bool = false
     ){
         self.name = name
@@ -56,7 +56,7 @@ struct Workout: Identifiable, Codable, Equatable {
             startDate = Date()
         }
 
-        restTimerInterval = (try? container.decode(TimeInterval.self, forKey: .restTimerInterval)) ?? 90
+        restTimerInterval = (try? container.decode(TimeInterval.self, forKey: .restTimerInterval)) ?? 60
         startsRestTimerOnAddSet = (try? container.decode(Bool.self, forKey: .startsRestTimerOnAddSet)) ?? false
     }
     
