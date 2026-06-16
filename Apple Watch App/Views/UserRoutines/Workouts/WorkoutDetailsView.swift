@@ -14,11 +14,13 @@ struct WorkoutDetailsView: View {
     @EnvironmentObject private var userData: UserData
     @Binding var workout: Workout
     @State private var showAlert = false
+    @State private var showTimerSettingsInfo = false
     @State private var navigateToHistory = false
     @State private var timerRemainingSeconds = 0
     @State private var isTimerRunning = false
     
     private let exercises: [Exercise] = Bundle.main.decode("exercises.json")
+    private static let timerSettingsInfoShownKey = "WorkoutDetailsTimerSettingsInfoShown"
     private let restTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -138,9 +140,15 @@ struct WorkoutDetailsView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .alert("Rest timer settings", isPresented: $showTimerSettingsInfo) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Set a default rest timer in Settings, and choose whether workouts use individual timers or the default.")
+        }
         .onAppear {
-            workout.restTimerInterval = TimeInterval(normalizedRestTimerInterval(Int(workout.restTimerInterval)))
-            timerRemainingSeconds = normalizedRestTimerInterval(Int(workout.restTimerInterval))
+            normalizeStoredRestTimerIntervals()
+            timerRemainingSeconds = effectiveRestTimerInterval
+            showTimerSettingsInfoIfNeeded()
         }
         .onReceive(restTimer) { _ in
             tickRestTimer()
@@ -177,11 +185,11 @@ struct WorkoutDetailsView: View {
 
     private var restTimerIntervalBinding: Binding<Int> {
         Binding(
-            get: { normalizedRestTimerInterval(Int(workout.restTimerInterval)) },
+            get: { effectiveRestTimerInterval },
             set: { newValue in
-                workout.restTimerInterval = TimeInterval(normalizedRestTimerInterval(newValue))
+                setEffectiveRestTimerInterval(newValue)
                 if !isTimerRunning {
-                    timerRemainingSeconds = Int(workout.restTimerInterval)
+                    timerRemainingSeconds = effectiveRestTimerInterval
                 }
                 playTimerControlHaptic()
             }
@@ -189,7 +197,7 @@ struct WorkoutDetailsView: View {
     }
 
     private func startRestTimer() {
-        let interval = normalizedRestTimerInterval(Int(workout.restTimerInterval))
+        let interval = effectiveRestTimerInterval
         if timerRemainingSeconds <= 0 || timerRemainingSeconds > interval {
             timerRemainingSeconds = interval
         }
@@ -202,11 +210,42 @@ struct WorkoutDetailsView: View {
 
     private func resetRestTimer() {
         isTimerRunning = false
-        timerRemainingSeconds = normalizedRestTimerInterval(Int(workout.restTimerInterval))
+        timerRemainingSeconds = effectiveRestTimerInterval
     }
 
     private func normalizedRestTimerInterval(_ seconds: Int) -> Int {
-        seconds >= 15 && seconds <= 600 && seconds % 15 == 0 ? seconds : 60
+        UserData.normalizedRestTimerInterval(seconds)
+    }
+
+    private var effectiveRestTimerInterval: Int {
+        if userData.usesIndividualRestTimers {
+            return normalizedRestTimerInterval(Int(workout.restTimerInterval))
+        }
+
+        return normalizedRestTimerInterval(Int(userData.defaultRestTimerInterval))
+    }
+
+    private func setEffectiveRestTimerInterval(_ seconds: Int) {
+        let interval = TimeInterval(normalizedRestTimerInterval(seconds))
+        if userData.usesIndividualRestTimers {
+            workout.restTimerInterval = interval
+        } else {
+            userData.defaultRestTimerInterval = interval
+        }
+    }
+
+    private func normalizeStoredRestTimerIntervals() {
+        workout.restTimerInterval = TimeInterval(normalizedRestTimerInterval(Int(workout.restTimerInterval)))
+        userData.defaultRestTimerInterval = TimeInterval(normalizedRestTimerInterval(Int(userData.defaultRestTimerInterval)))
+    }
+
+    private func showTimerSettingsInfoIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: Self.timerSettingsInfoShownKey) else {
+            return
+        }
+
+        UserDefaults.standard.set(true, forKey: Self.timerSettingsInfoShownKey)
+        showTimerSettingsInfo = true
     }
 
     private func playTimerControlHaptic() {

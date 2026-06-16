@@ -13,9 +13,24 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             VStack(alignment: .leading) {
+                Stepper(
+                    value: Binding(
+                        get: { Int(userData.defaultRestTimerInterval) },
+                        set: { userData.defaultRestTimerInterval = TimeInterval($0) }
+                    ),
+                    in: 15...600,
+                    step: 15
+                ) {
+                    Text("Default \(formatTimer(Int(userData.defaultRestTimerInterval)))")
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+
+                Toggle("Individual timers", isOn: $userData.usesIndividualRestTimers)
+                    .padding(.horizontal, 20)
+
                 Toggle("Rest timer alert", isOn: $userData.restTimerAlertEnabled)
                     .padding(.horizontal, 20)
-                    .padding(.top, 12)
 
                 Text("This app is designed to help you monitor your workouts. \n\nIt lets you create **routines**, which are comprised of one or several workouts. You can set the day of the week that routine falls on, and you can name it as well. If you don't name the routine, it will show the day of the week selected by default. \n\n**Workouts** are comprised of an exercise, as well as one or several sets. Once created, you can add new sets and log old sets by clicking the \"new log\" button. You can view old sets by clicking the \"History\" button. \n\n**Sets** track the weight used, and the number of reps performed.")
                     .padding(.horizontal, 20)
@@ -63,6 +78,12 @@ struct SettingsView: View {
         .navigationViewStyle(.stack)
         .background(.blue)
         .ignoresSafeArea(.all)
+    }
+
+    private func formatTimer(_ seconds: Int) -> String {
+        let minutes = max(0, seconds) / 60
+        let seconds = max(0, seconds) % 60
+        return "\(minutes):\(String(format: "%02d", seconds))"
     }
 }
 

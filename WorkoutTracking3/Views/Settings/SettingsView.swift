@@ -91,6 +91,32 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Timers")
                         VStack(alignment: .leading, spacing: 12) {
+                            Stepper(
+                                value: Binding(
+                                    get: { Int(userData.defaultRestTimerInterval) },
+                                    set: { userData.defaultRestTimerInterval = TimeInterval($0) }
+                                ),
+                                in: 15...600,
+                                step: 15
+                            ) {
+                                Label("Default Rest Timer", systemImage: "timer")
+                                    .font(.headline.weight(.black))
+                            }
+
+                            Text(formatTimer(Int(userData.defaultRestTimerInterval)))
+                                .font(.subheadline.weight(.black))
+                                .foregroundColor(.secondary)
+
+                            Toggle(isOn: $userData.usesIndividualRestTimers) {
+                                Label("Individual Workout Timers", systemImage: "slider.horizontal.3")
+                                    .font(.headline.weight(.black))
+                            }
+                            .tint(AppColors.accent)
+
+                            Text("When this is off, every workout uses the default rest timer above.")
+                                .font(.subheadline.weight(.bold))
+                                .foregroundColor(.secondary)
+
                             Toggle(isOn: $userData.restTimerAlertEnabled) {
                                 Label("Rest Timer Alert", systemImage: "bell.fill")
                                     .font(.headline.weight(.black))
@@ -225,6 +251,12 @@ struct SettingsView: View {
                 importError = "Error: Failed to import file."
             }
         }
+    }
+
+    private func formatTimer(_ seconds: Int) -> String {
+        let minutes = max(0, seconds) / 60
+        let seconds = max(0, seconds) % 60
+        return "\(minutes):\(String(format: "%02d", seconds))"
     }
 
     private func sendFeedback() {

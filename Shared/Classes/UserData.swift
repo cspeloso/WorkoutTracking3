@@ -16,11 +16,15 @@ final class UserData: NSObject, ObservableObject, Codable {
     private static let routinesUpdatedAtKey = "UserDataRoutinesUpdatedAt"
     private static let weightUnitKey = "UserDataWeightUnit"
     private static let restTimerAlertEnabledKey = "UserDataRestTimerAlertEnabled"
+    private static let defaultRestTimerIntervalKey = "UserDataDefaultRestTimerInterval"
+    private static let usesIndividualRestTimersKey = "UserDataUsesIndividualRestTimers"
     private static let legacyLocalKey = "UserDataFirstAttempt"
     private static let watchConnectivityRoutinesKey = "routinesData"
     private static let watchConnectivityUpdatedAtKey = "routinesUpdatedAt"
     private static let watchConnectivityWeightUnitKey = "weightUnit"
     private static let watchConnectivityRestTimerAlertEnabledKey = "restTimerAlertEnabled"
+    private static let watchConnectivityDefaultRestTimerIntervalKey = "defaultRestTimerInterval"
+    private static let watchConnectivityUsesIndividualRestTimersKey = "usesIndividualRestTimers"
     private static let deletedRoutinesBackupKey = "DeletedUserDataRoutinesBackup"
     private static let deletedRoutinesBackupCreatedAtKey = "DeletedUserDataRoutinesBackupCreatedAt"
     private static let deletedRoutinesBackupRetention: TimeInterval = 30 * 24 * 60 * 60
@@ -46,6 +50,20 @@ final class UserData: NSObject, ObservableObject, Codable {
             }
         }
     }
+    @Published var defaultRestTimerInterval: TimeInterval {
+        didSet {
+            if oldValue != defaultRestTimerInterval && !isApplyingRemoteSettingsUpdate {
+                saveRestTimerPreferences()
+            }
+        }
+    }
+    @Published var usesIndividualRestTimers: Bool {
+        didSet {
+            if oldValue != usesIndividualRestTimers && !isApplyingRemoteSettingsUpdate {
+                saveRestTimerPreferences()
+            }
+        }
+    }
 
     enum CodingKeys: CodingKey {
         case routines
@@ -65,6 +83,8 @@ final class UserData: NSObject, ObservableObject, Codable {
         self.deletedDataBackupInfo = nil
         self.weightUnit = Self.loadWeightUnit()
         self.restTimerAlertEnabled = Self.loadRestTimerAlertEnabled()
+        self.defaultRestTimerInterval = Self.loadDefaultRestTimerInterval()
+        self.usesIndividualRestTimers = Self.loadUsesIndividualRestTimers()
         super.init()
 
         print("UserData singleton init at \(Date())")
@@ -107,6 +127,8 @@ final class UserData: NSObject, ObservableObject, Codable {
         self.deletedDataBackupInfo = nil
         self.weightUnit = .pounds
         self.restTimerAlertEnabled = true
+        self.defaultRestTimerInterval = 60
+        self.usesIndividualRestTimers = true
         super.init()
     }
 
@@ -124,6 +146,8 @@ final class UserData: NSObject, ObservableObject, Codable {
         let updatedAtSnapshot = lastUpdatedAt
         let weightUnitSnapshot = weightUnit
         let restTimerAlertEnabledSnapshot = restTimerAlertEnabled
+        let defaultRestTimerIntervalSnapshot = defaultRestTimerInterval
+        let usesIndividualRestTimersSnapshot = usesIndividualRestTimers
 
         saveToLocalDefaults(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
         saveToCloud(routines: routinesSnapshot, updatedAt: updatedAtSnapshot)
@@ -131,7 +155,9 @@ final class UserData: NSObject, ObservableObject, Codable {
             routines: routinesSnapshot,
             updatedAt: updatedAtSnapshot,
             weightUnit: weightUnitSnapshot,
-            restTimerAlertEnabled: restTimerAlertEnabledSnapshot
+            restTimerAlertEnabled: restTimerAlertEnabledSnapshot,
+            defaultRestTimerInterval: defaultRestTimerIntervalSnapshot,
+            usesIndividualRestTimers: usesIndividualRestTimersSnapshot
         )
     }
 
@@ -226,6 +252,7 @@ final class UserData: NSObject, ObservableObject, Codable {
             self.loadFromCloud()
             self.loadWeightUnitFromCloud()
             self.loadRestTimerAlertEnabledFromCloud()
+            self.loadRestTimerPreferencesFromCloud()
         }
     }
 
@@ -286,6 +313,7 @@ final class UserData: NSObject, ObservableObject, Codable {
         loadFromCloud()
         loadWeightUnitFromCloud()
         loadRestTimerAlertEnabledFromCloud()
+        loadRestTimerPreferencesFromCloud()
         requestPairedDeviceSync()
     }
 
@@ -590,6 +618,89 @@ extension UserData {
         isApplyingRemoteSettingsUpdate = false
         saveRestTimerAlertEnabled()
     }
+
+    static func normalizedRestTimerInterval(_ seconds: Int) -> Int {
+        seconds >= 15 && seconds <= 600 && seconds % 15 == 0 ? seconds : 60
+    }
+
+    private static func loadDefaultRestTimerInterval() -> TimeInterval {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        if store.object(forKey: defaultRestTimerIntervalKey) != nil {
+            let interval = TimeInterval(normalizedRestTimerInterval(Int(store.double(forKey: defaultRestTimerIntervalKey))))
+            UserDefaults.standard.set(interval, forKey: defaultRestTimerIntervalKey)
+            return interval
+        }
+
+        if UserDefaults.standard.object(forKey: defaultRestTimerIntervalKey) != nil {
+            return TimeInterval(normalizedRestTimerInterval(Int(UserDefaults.standard.double(forKey: defaultRestTimerIntervalKey))))
+        }
+
+        return 60
+    }
+
+    private static func loadUsesIndividualRestTimers() -> Bool {
+        let store = NSUbiquitousKeyValueStore.default
+        store.synchronize()
+
+        if store.object(forKey: usesIndividualRestTimersKey) != nil {
+            let usesIndividualTimers = store.bool(forKey: usesIndividualRestTimersKey)
+            UserDefaults.standard.set(usesIndividualTimers, forKey: usesIndividualRestTimersKey)
+            return usesIndividualTimers
+        }
+
+        if UserDefaults.standard.object(forKey: usesIndividualRestTimersKey) != nil {
+            return UserDefaults.standard.bool(forKey: usesIndividualRestTimersKey)
+        }
+
+        return true
+    }
+
+    private func saveRestTimerPreferences() {
+        let normalizedInterval = TimeInterval(Self.normalizedRestTimerInterval(Int(defaultRestTimerInterval)))
+        if normalizedInterval != defaultRestTimerInterval {
+            isApplyingRemoteSettingsUpdate = true
+            defaultRestTimerInterval = normalizedInterval
+            isApplyingRemoteSettingsUpdate = false
+        }
+
+        let store = NSUbiquitousKeyValueStore.default
+        UserDefaults.standard.set(defaultRestTimerInterval, forKey: Self.defaultRestTimerIntervalKey)
+        UserDefaults.standard.set(usesIndividualRestTimers, forKey: Self.usesIndividualRestTimersKey)
+        store.set(defaultRestTimerInterval, forKey: Self.defaultRestTimerIntervalKey)
+        store.set(usesIndividualRestTimers, forKey: Self.usesIndividualRestTimersKey)
+        store.synchronize()
+        sendToPairedDevice()
+    }
+
+    private func loadRestTimerPreferencesFromCloud() {
+        let interval = Self.loadDefaultRestTimerInterval()
+        let usesIndividualTimers = Self.loadUsesIndividualRestTimers()
+        guard interval != defaultRestTimerInterval || usesIndividualTimers != usesIndividualRestTimers else {
+            return
+        }
+
+        isApplyingRemoteSettingsUpdate = true
+        defaultRestTimerInterval = interval
+        usesIndividualRestTimers = usesIndividualTimers
+        isApplyingRemoteSettingsUpdate = false
+    }
+
+    private func applyRemoteRestTimerPreferences(defaultInterval: TimeInterval?, usesIndividualTimers: Bool?) {
+        let interval = defaultInterval.map { TimeInterval(Self.normalizedRestTimerInterval(Int($0))) } ?? defaultRestTimerInterval
+        let usesIndividualTimers = usesIndividualTimers ?? usesIndividualRestTimers
+
+        guard interval != defaultRestTimerInterval || usesIndividualTimers != usesIndividualRestTimers else {
+            return
+        }
+
+        isApplyingRemoteSettingsUpdate = true
+        defaultRestTimerInterval = interval
+        usesIndividualRestTimers = usesIndividualTimers
+        isApplyingRemoteSettingsUpdate = false
+        saveRestTimerPreferences()
+    }
 }
 
 struct DeletedDataBackupInfo {
@@ -748,7 +859,9 @@ extension UserData: WCSessionDelegate {
             routines: routines,
             updatedAt: lastUpdatedAt,
             weightUnit: weightUnit,
-            restTimerAlertEnabled: restTimerAlertEnabled
+            restTimerAlertEnabled: restTimerAlertEnabled,
+            defaultRestTimerInterval: defaultRestTimerInterval,
+            usesIndividualRestTimers: usesIndividualRestTimers
         )
     }
 
@@ -756,7 +869,9 @@ extension UserData: WCSessionDelegate {
         routines routinesSnapshot: [Routine],
         updatedAt updatedAtSnapshot: TimeInterval,
         weightUnit weightUnitSnapshot: WeightUnit,
-        restTimerAlertEnabled restTimerAlertEnabledSnapshot: Bool
+        restTimerAlertEnabled restTimerAlertEnabledSnapshot: Bool,
+        defaultRestTimerInterval defaultRestTimerIntervalSnapshot: TimeInterval,
+        usesIndividualRestTimers usesIndividualRestTimersSnapshot: Bool
     ) {
         guard let session else {
             return
@@ -769,7 +884,9 @@ extension UserData: WCSessionDelegate {
                     Self.watchConnectivityRoutinesKey: encoded,
                     Self.watchConnectivityUpdatedAtKey: updatedAtSnapshot,
                     Self.watchConnectivityWeightUnitKey: weightUnitSnapshot.rawValue,
-                    Self.watchConnectivityRestTimerAlertEnabledKey: restTimerAlertEnabledSnapshot
+                    Self.watchConnectivityRestTimerAlertEnabledKey: restTimerAlertEnabledSnapshot,
+                    Self.watchConnectivityDefaultRestTimerIntervalKey: defaultRestTimerIntervalSnapshot,
+                    Self.watchConnectivityUsesIndividualRestTimersKey: usesIndividualRestTimersSnapshot
                 ]
 
                 if session.activationState == .activated {
@@ -813,6 +930,10 @@ extension UserData: WCSessionDelegate {
 
         applyRemoteWeightUnit(payload[Self.watchConnectivityWeightUnitKey] as? String)
         applyRemoteRestTimerAlertEnabled(payload[Self.watchConnectivityRestTimerAlertEnabledKey] as? Bool)
+        applyRemoteRestTimerPreferences(
+            defaultInterval: payload[Self.watchConnectivityDefaultRestTimerIntervalKey] as? TimeInterval,
+            usesIndividualTimers: payload[Self.watchConnectivityUsesIndividualRestTimersKey] as? Bool
+        )
 
         guard let data = payload[Self.watchConnectivityRoutinesKey] as? Data,
               let decoded = try? JSONDecoder().decode([Routine].self, from: data) else {
@@ -852,7 +973,9 @@ extension UserData: WCSessionDelegate {
                 Self.watchConnectivityRoutinesKey: encoded,
                 Self.watchConnectivityUpdatedAtKey: lastUpdatedAt,
                 Self.watchConnectivityWeightUnitKey: weightUnit.rawValue,
-                Self.watchConnectivityRestTimerAlertEnabledKey: restTimerAlertEnabled
+                Self.watchConnectivityRestTimerAlertEnabledKey: restTimerAlertEnabled,
+                Self.watchConnectivityDefaultRestTimerIntervalKey: defaultRestTimerInterval,
+                Self.watchConnectivityUsesIndividualRestTimersKey: usesIndividualRestTimers
             ])
             return
         }
