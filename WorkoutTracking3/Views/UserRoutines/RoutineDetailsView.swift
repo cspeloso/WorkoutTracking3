@@ -15,6 +15,9 @@ struct RoutineDetailsView: View {
     @State private var createdWorkoutID: Workout.ID?
     @State private var presentedWorkoutRoute: WorkoutPresentationRoute?
     @State private var shouldShowAddWorkout = false
+    @State private var workoutIDBeingRenamed: Workout.ID?
+    @State private var renamedWorkoutName = ""
+    @State private var shouldShowRenameWorkout = false
     @FocusState private var isRoutineNameFocused: Bool
     
     private let routineWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", ""]
@@ -106,25 +109,44 @@ struct RoutineDetailsView: View {
                         .buttonStyle(.plain)
                     } else {
                         ForEach(displayedWorkoutIndices, id: \.self) { index in
-                            Button {
-                                presentedWorkoutRoute = WorkoutPresentationRoute(
-                                    routineID: routine.id,
-                                    workoutID: routine.workouts[index].id
-                                )
-                            } label: {
-                                WorkoutCard(
-                                    workout: routine.workouts[index],
-                                    index: index + 1,
-                                    loggedCount: loggedSetCount(for: routine.workouts[index]),
-                                    hasLoggedToday: hasLoggedToday(for: routine.workouts[index])
-                                )
+                            WorkoutCard(
+                                workout: routine.workouts[index],
+                                index: index + 1,
+                                loggedCount: loggedSetCount(for: routine.workouts[index]),
+                                hasLoggedToday: hasLoggedToday(for: routine.workouts[index]),
+                                onOpen: {
+                                    presentedWorkoutRoute = WorkoutPresentationRoute(
+                                        routineID: routine.id,
+                                        workoutID: routine.workouts[index].id
+                                    )
+                                }
+                            )
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button {
+                                    beginRenamingWorkout(routine.workouts[index])
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                .tint(AppColors.accent)
                             }
-                            .buttonStyle(.plain)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
                                     routine.workouts.remove(at: index)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .contextMenu {
+                                Button {
+                                    beginRenamingWorkout(routine.workouts[index])
+                                } label: {
+                                    Label("Rename Workout", systemImage: "pencil")
+                                }
+
+                                Button(role: .destructive) {
+                                    routine.workouts.remove(at: index)
+                                } label: {
+                                    Label("Delete Workout", systemImage: "trash")
                                 }
                             }
                         }
@@ -181,6 +203,20 @@ struct RoutineDetailsView: View {
         .onChange(of: editMode?.wrappedValue) { newMode in
             isRoutineNameFocused = newMode?.isEditing == true
         }
+        .alert("Rename Workout", isPresented: $shouldShowRenameWorkout) {
+            TextField("Workout Name", text: $renamedWorkoutName)
+
+            Button("Cancel", role: .cancel) {
+                clearRenameState()
+            }
+
+            Button("Save") {
+                renameSelectedWorkout()
+            }
+            .disabled(renamedWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } message: {
+            Text("Update this workout's name without changing its sets or history.")
+        }
         .onChange(of: createdWorkoutID) { newID in
             guard let newID else {
                 return
@@ -230,6 +266,30 @@ struct RoutineDetailsView: View {
 
     private var displayedWorkoutIndices: [Int] {
         Array(routine.workouts.indices)
+    }
+
+    private func beginRenamingWorkout(_ workout: Workout) {
+        workoutIDBeingRenamed = workout.id
+        renamedWorkoutName = workout.name
+        shouldShowRenameWorkout = true
+    }
+
+    private func renameSelectedWorkout() {
+        let trimmedName = renamedWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty,
+              let workoutIDBeingRenamed,
+              let workoutIndex = routine.workouts.firstIndex(where: { $0.id == workoutIDBeingRenamed }) else {
+            clearRenameState()
+            return
+        }
+
+        routine.workouts[workoutIndex].name = trimmedName
+        clearRenameState()
+    }
+
+    private func clearRenameState() {
+        workoutIDBeingRenamed = nil
+        renamedWorkoutName = ""
     }
 
     private func loggedSetCount(for workout: Workout) -> Int {
@@ -389,6 +449,7 @@ private struct WorkoutCard: View {
     let index: Int
     let loggedCount: Int
     let hasLoggedToday: Bool
+    let onOpen: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -437,6 +498,8 @@ private struct WorkoutCard: View {
         .background(AppColors.card)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppColors.border))
         .cornerRadius(8)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onOpen)
     }
 }
 

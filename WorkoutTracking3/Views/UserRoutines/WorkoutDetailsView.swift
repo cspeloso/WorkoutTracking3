@@ -27,6 +27,8 @@ struct WorkoutDetailsView: View {
     @State private var timerRemainingSeconds = 0
     @State private var isTimerRunning = false
     @State private var timerEndsAt: Date?
+    @State private var renamedWorkoutName = ""
+    @State private var shouldShowRenameWorkout = false
 
     private static let timerSettingsInfoShownKey = "WorkoutDetailsTimerSettingsInfoShown"
     private let restTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -73,12 +75,27 @@ struct WorkoutDetailsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(workout.name)
                             .font(.system(size: 38, weight: .black, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
+
+                        Button {
+                            beginRenamingWorkout()
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.headline.weight(.black))
+                                .foregroundColor(AppColors.accent)
+                                .frame(width: 34, height: 34)
+                                .background(AppColors.elevated)
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Rename \(workout.name)")
+                        .offset(y: -6)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 18)
 
                     NewSetCreator2(
@@ -225,6 +242,20 @@ struct WorkoutDetailsView: View {
         } message: {
             Text("You can set a default rest timer in Settings, and choose whether workouts keep individual timer durations or all use the default.")
         }
+        .alert("Rename Workout", isPresented: $shouldShowRenameWorkout) {
+            TextField("Workout Name", text: $renamedWorkoutName)
+
+            Button("Cancel", role: .cancel) {
+                clearRenameState()
+            }
+
+            Button("Save") {
+                renameWorkout()
+            }
+            .disabled(renamedWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } message: {
+            Text("Update this workout's name without changing its sets or history.")
+        }
         .onAppear {
             visibleSets = workout.sets
             normalizeStoredRestTimerIntervals()
@@ -269,6 +300,27 @@ struct WorkoutDetailsView: View {
             .filter { !offsets.contains($0.offset) }
             .map(\.element)
         updateCurrentSets(updatedSets)
+    }
+
+    private func beginRenamingWorkout() {
+        renamedWorkoutName = workout.name
+        shouldShowRenameWorkout = true
+    }
+
+    private func renameWorkout() {
+        let trimmedName = renamedWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            clearRenameState()
+            return
+        }
+
+        workout.name = trimmedName
+        refreshCachedWorkoutData()
+        clearRenameState()
+    }
+
+    private func clearRenameState() {
+        renamedWorkoutName = ""
     }
 
     // Ensure UI-driving mutations happen on the main actor
