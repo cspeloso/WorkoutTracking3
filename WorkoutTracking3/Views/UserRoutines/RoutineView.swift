@@ -203,6 +203,7 @@ struct RoutineView: View {
             NavigationView {
                 AddRoutine(routines: $userData.routines)
             }
+            .sessionReplayProtected()
         }
     }
 

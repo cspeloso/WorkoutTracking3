@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CC1000010000000000000000 /* Clarity in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000020000000000000000 /* Clarity */; };
+		CC1000040000000000000000 /* SessionReplayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000050000000000000000 /* SessionReplayService.swift */; };
+		CC1000060000000000000000 /* SessionReplayViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000070000000000000000 /* SessionReplayViews.swift */; };
 		830B573E27D9B53C003A067E /* WorkoutTracking3App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */; };
 		830B574027D9B53C003A067E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B573F27D9B53C003A067E /* ContentView.swift */; };
 		830B574227D9B53D003A067E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 830B574127D9B53D003A067E /* Assets.xcassets */; };
@@ -122,6 +125,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CC1000050000000000000000 /* SessionReplayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReplayService.swift; sourceTree = "<group>"; };
+		CC1000070000000000000000 /* SessionReplayViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReplayViews.swift; sourceTree = "<group>"; };
 		830B573A27D9B53C003A067E /* Work It Out.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Work It Out.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTracking3App.swift; sourceTree = "<group>"; };
 		830B573F27D9B53C003A067E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -191,6 +196,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8364A0D32FBC0C3800508375 /* FirebaseAnalytics in Frameworks */,
+				CC1000010000000000000000 /* Clarity in Frameworks */,
 				8364A0D52FBC0C3800508375 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -238,6 +244,8 @@
 			children = (
 				830DC0C72CED8CC50080680C /* WorkoutTracking3.entitlements */,
 				830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */,
+				CC1000050000000000000000 /* SessionReplayService.swift */,
+				CC1000070000000000000000 /* SessionReplayViews.swift */,
 				830B574127D9B53D003A067E /* Assets.xcassets */,
 				AA0000160000000000000000 /* LiveActivities */,
 				830B574327D9B53D003A067E /* Preview Content */,
@@ -491,6 +499,11 @@
 				837BF3582B51A86400EAD0F2 /* PBXTargetDependency */,
 				AA0000140000000000000000 /* PBXTargetDependency */,
 			);
+			packageProductDependencies = (
+				CC1000020000000000000000 /* Clarity */,
+				8364A0D22FBC0C3800508375 /* FirebaseAnalytics */,
+				8364A0D42FBC0C3800508375 /* FirebaseCrashlytics */,
+			);
 			name = WorkoutTracking3;
 			productName = WorkoutTracking3;
 			productReference = 830B573A27D9B53C003A067E /* Work It Out.app */;
@@ -561,6 +574,7 @@
 			);
 			mainGroup = 830B573127D9B53C003A067E;
 			packageReferences = (
+				CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */,
 				8364A0D12FBC0C3800508375 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = 830B573B27D9B53C003A067E /* Products */;
@@ -657,6 +671,8 @@
 				837BF37C2B51AFD000EAD0F2 /* Routine.swift in Sources */,
 				830B576427D9B897003A067E /* AddRoutine.swift in Sources */,
 				830B573E27D9B53C003A067E /* WorkoutTracking3App.swift in Sources */,
+				CC1000040000000000000000 /* SessionReplayService.swift in Sources */,
+				CC1000060000000000000000 /* SessionReplayViews.swift in Sources */,
 				8364A0D62FBD00000508375 /* AnalyticsService.swift in Sources */,
 				AA0000030000000000000000 /* RestTimerActivityAttributes.swift in Sources */,
 				830B576C27D9C0A8003A067E /* NewSetCreator.swift in Sources */,
@@ -1076,6 +1092,11 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/clarity-apps";
+			requirement = { kind = exactVersion; version = 4.0.0; };
+		};
 		8364A0D12FBC0C3800508375 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -1087,6 +1108,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CC1000020000000000000000 /* Clarity */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */;
+			productName = Clarity;
+		};
 		8364A0D22FBC0C3800508375 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8364A0D12FBC0C3800508375 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

@@ -244,6 +244,7 @@ struct WorkoutDetailsView: View {
         }
         .alert("Rename Workout", isPresented: $shouldShowRenameWorkout) {
             TextField("Workout Name", text: $renamedWorkoutName)
+            .sessionReplayMasked()
 
             Button("Cancel", role: .cancel) {
                 clearRenameState()

@@ -62,7 +62,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "837BF34B2B51A86300EAD0F2"
             BuildableName = "Work It Out.app"
-            BlueprintName = "Work It Out Apple Watch Watch App"
             ReferencedContainer = "container:WorkoutTracking3.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -80,7 +79,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "837BF34B2B51A86300EAD0F2"
             BuildableName = "Work It Out.app"
-            BlueprintName = "Work It Out Apple Watch Watch App"
             ReferencedContainer = "container:WorkoutTracking3.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

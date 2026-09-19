@@ -42,6 +42,7 @@ struct NewSetCreator: View {
             Spacer()
             
             TextField("Weight", value: $weight, formatter: decimalFormatter)
+            .sessionReplayMasked()
                 .keyboardType(.decimalPad)
                 .focused($isWeightInputActive)
                 .toolbar {

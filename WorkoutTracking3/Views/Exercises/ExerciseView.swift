@@ -34,6 +34,7 @@ struct ExerciseView: View {
             VStack {
                 
                 TextField("Search", text: $searchText)
+                .sessionReplayMasked()
                     .padding(8)
                     .background(Color(.systemGray6))
                     .cornerRadius(10)

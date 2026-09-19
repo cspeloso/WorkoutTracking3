@@ -27,6 +27,7 @@ struct AddRoutine: View {
             Form {
                 Section {
                     TextField("Routine Name", text: $routineName)
+                    .sessionReplayMasked()
                 } header: {
                     Text("Routine name")
                 } footer: {

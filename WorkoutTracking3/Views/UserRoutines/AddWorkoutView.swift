@@ -33,6 +33,7 @@ struct AddWorkoutView: View {
             Section {
                 HStack {
                         TextField("Exercise name", text: $customExerciseName)
+                        .sessionReplayMasked()
                         .onChange(of: customExerciseName) { newValue in
                             if newValue.count > 50 {
                                 customExerciseName = String(newValue.prefix(50))

@@ -23,6 +23,7 @@ struct WorkoutPickerListView: View {
             Section {
                 HStack{
                     TextField("Exercise Name", text: $workoutName)
+                    .sessionReplayMasked()
                         .onChange(of: workoutName) { newValue in
                             if newValue.count > 50 {
                                 workoutName = String(newValue.prefix(50))

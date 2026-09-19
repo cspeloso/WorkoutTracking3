@@ -65,6 +65,7 @@ struct NewSetCreator2: View {
                 largePlusTitle: "+\(userData.weightUnit.largeStep.formatted(.number.precision(.fractionLength(0...1))))",
                 valueField: {
                     TextField("Weight", value: $displayWeight, formatter: decimalFormatter)
+                    .sessionReplayMasked()
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .weight)
                         .multilineTextAlignment(.center)
@@ -95,6 +96,7 @@ struct NewSetCreator2: View {
                         ),
                         formatter: decimalFormatter
                     )
+                    .sessionReplayMasked()
                     .keyboardType(.numberPad)
                     .focused($focusedField, equals: .reps)
                     .multilineTextAlignment(.center)

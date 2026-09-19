@@ -133,6 +133,8 @@ struct SettingsView: View {
                         .cornerRadius(8)
                     }
 
+                    SessionReplaySettings()
+
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Data")
                         VStack(spacing: 12) {

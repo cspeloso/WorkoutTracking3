@@ -32,6 +32,7 @@ struct RoutineDetailsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             if isEditing {
                                 TextField("Routine Name", text: $routine.name)
+                                .sessionReplayMasked()
                                     .font(.system(size: 36, weight: .black, design: .rounded))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
@@ -205,6 +206,7 @@ struct RoutineDetailsView: View {
         }
         .alert("Rename Workout", isPresented: $shouldShowRenameWorkout) {
             TextField("Workout Name", text: $renamedWorkoutName)
+            .sessionReplayMasked()
 
             Button("Cancel", role: .cancel) {
                 clearRenameState()
@@ -248,6 +250,7 @@ struct RoutineDetailsView: View {
                     }
             }
             .navigationViewStyle(.stack)
+            .sessionReplayProtected()
         }
     }
 

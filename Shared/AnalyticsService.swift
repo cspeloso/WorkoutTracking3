@@ -19,6 +19,8 @@ import WatchConnectivity
 
 enum AppAnalytics {
     enum Event {
+        static let sessionReplayConsentChanged = "session_replay_consent_changed"
+        static let sessionReplayPromptDismissed = "session_replay_prompt_dismissed"
         static let appOpened = "app_opened"
         static let onboardingCompleted = "onboarding_completed"
         static let workoutCreated = "workout_created"
@@ -32,6 +34,7 @@ enum AppAnalytics {
     }
 
     enum Param {
+        static let choice = "choice"
         static let source = "source"
         static let platform = "platform"
         static let routineCount = "routine_count"

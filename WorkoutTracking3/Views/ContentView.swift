@@ -10,6 +10,9 @@ import SwiftUI
 struct ContentView: View {
     @AppStorage("HasCompletedWeightUnitPrompt") private var hasCompletedWeightUnitPrompt = false
     @State private var showWeightUnitPrompt = false
+    @State private var showReplayConsent = false
+    @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var replay = SessionReplayService.shared
 
     var body: some View {
         TabView {
@@ -25,9 +28,11 @@ struct ContentView: View {
             NavigationView { SettingsView() }
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }
+        .sessionReplayProtected()
         .accentColor(AppColors.accent)
         .environmentObject(UserData.shared)
         .onAppear {
+            replay.setActive(scenePhase == .active)
             AppReviewRequester.recordAppLaunch()
             AppAnalytics.logAppOpened(platform: "ios", routineCount: UserData.shared.routines.count)
 
@@ -41,6 +46,17 @@ struct ContentView: View {
                 showWeightUnitPrompt = true
             }
         }
+        .onChange(of: scenePhase) { replay.setActive($0 == .active) }
+        .task(id: hasCompletedWeightUnitPrompt) {
+            guard hasCompletedWeightUnitPrompt, replay.isSupported,
+                  replay.consent == .undecided else { return }
+            // Let the weight-unit alert finish dismissing before presenting.
+            do { try await Task.sleep(nanoseconds: 500_000_000) }
+            catch { return }
+            guard replay.consent == .undecided else { return }
+            showReplayConsent = true
+        }
+        .sessionReplayConsentSheet(isPresented: $showReplayConsent, source: .initialPrompt)
         .alert("Choose your weight unit", isPresented: $showWeightUnitPrompt) {
             Button("Pounds (lb)") {
                 UserData.shared.setWeightUnitPreference(.pounds)
