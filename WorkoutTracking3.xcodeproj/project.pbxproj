@@ -7,9 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CC1000010000000000000000 /* Clarity in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000020000000000000000 /* Clarity */; };
-		CC1000040000000000000000 /* SessionReplayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000050000000000000000 /* SessionReplayService.swift */; };
-		CC1000060000000000000000 /* SessionReplayViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000070000000000000000 /* SessionReplayViews.swift */; };
 		830B573E27D9B53C003A067E /* WorkoutTracking3App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */; };
 		830B574027D9B53C003A067E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830B573F27D9B53C003A067E /* ContentView.swift */; };
 		830B574227D9B53D003A067E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 830B574127D9B53D003A067E /* Assets.xcassets */; };
@@ -80,6 +77,9 @@
 		AA0000060000000000000000 /* RestTimerLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000050000000000000000 /* RestTimerLiveActivityController.swift */; };
 		AA0000080000000000000000 /* RestTimerLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000070000000000000000 /* RestTimerLiveActivityWidget.swift */; };
 		AA0000110000000000000000 /* RestTimerLiveActivityWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = AA0000010000000000000000 /* RestTimerLiveActivityWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CC1000010000000000000000 /* Clarity in Frameworks */ = {isa = PBXBuildFile; productRef = CC1000020000000000000000 /* Clarity */; };
+		CC1000040000000000000000 /* SessionReplayService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000050000000000000000 /* SessionReplayService.swift */; };
+		CC1000060000000000000000 /* SessionReplayViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000070000000000000000 /* SessionReplayViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -125,8 +125,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		CC1000050000000000000000 /* SessionReplayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReplayService.swift; sourceTree = "<group>"; };
-		CC1000070000000000000000 /* SessionReplayViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReplayViews.swift; sourceTree = "<group>"; };
 		830B573A27D9B53C003A067E /* Work It Out.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Work It Out.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		830B573D27D9B53C003A067E /* WorkoutTracking3App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutTracking3App.swift; sourceTree = "<group>"; };
 		830B573F27D9B53C003A067E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -188,6 +186,8 @@
 		AA0000050000000000000000 /* RestTimerLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivityController.swift; sourceTree = "<group>"; };
 		AA0000070000000000000000 /* RestTimerLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivityWidget.swift; sourceTree = "<group>"; };
 		AA0000150000000000000000 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CC1000050000000000000000 /* SessionReplayService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReplayService.swift; sourceTree = "<group>"; };
+		CC1000070000000000000000 /* SessionReplayViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReplayViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -499,12 +499,12 @@
 				837BF3582B51A86400EAD0F2 /* PBXTargetDependency */,
 				AA0000140000000000000000 /* PBXTargetDependency */,
 			);
+			name = WorkoutTracking3;
 			packageProductDependencies = (
 				CC1000020000000000000000 /* Clarity */,
 				8364A0D22FBC0C3800508375 /* FirebaseAnalytics */,
 				8364A0D42FBC0C3800508375 /* FirebaseCrashlytics */,
 			);
-			name = WorkoutTracking3;
 			productName = WorkoutTracking3;
 			productReference = 830B573A27D9B53C003A067E /* Work It Out.app */;
 			productType = "com.apple.product-type.application";
@@ -885,7 +885,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.5;
+				MARKETING_VERSION = 2.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
 				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -917,7 +917,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.5;
+				MARKETING_VERSION = 2.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chrispeloso.WorkoutTracking3;
 				PRODUCT_NAME = "Work It Out";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1092,11 +1092,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/microsoft/clarity-apps";
-			requirement = { kind = exactVersion; version = 4.0.0; };
-		};
 		8364A0D12FBC0C3800508375 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -1105,14 +1100,17 @@
 				minimumVersion = 12.13.0;
 			};
 		};
+		CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/clarity-apps";
+			requirement = {
+				kind = exactVersion;
+				version = 4.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CC1000020000000000000000 /* Clarity */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */;
-			productName = Clarity;
-		};
 		8364A0D22FBC0C3800508375 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8364A0D12FBC0C3800508375 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
@@ -1122,6 +1120,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8364A0D12FBC0C3800508375 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		CC1000020000000000000000 /* Clarity */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CC1000030000000000000000 /* XCRemoteSwiftPackageReference "clarity-apps" */;
+			productName = Clarity;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
