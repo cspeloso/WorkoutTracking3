@@ -77,6 +77,7 @@ struct WorkoutDetailsView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(workout.name)
+                            .sessionReplayMasked()
                             .font(.system(size: 38, weight: .black, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
@@ -85,6 +86,7 @@ struct WorkoutDetailsView: View {
                             beginRenamingWorkout()
                         } label: {
                             Image(systemName: "pencil")
+                                .sessionReplayPublicLabel()
                                 .font(.headline.weight(.black))
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 34, height: 34)
@@ -130,6 +132,7 @@ struct WorkoutDetailsView: View {
 
                         if visibleSets.isEmpty {
                             Text("No sets logged yet.")
+                                .sessionReplayPublicLabel()
                                 .font(.headline.weight(.bold))
                                 .foregroundColor(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,6 +150,7 @@ struct WorkoutDetailsView: View {
                                             deleteSet(at: IndexSet(integer: index))
                                         } label: {
                                             Label("Delete Set", systemImage: "trash")
+                                                .sessionReplayPublicLabel()
                                         }
                                     }
                             }
@@ -159,6 +163,7 @@ struct WorkoutDetailsView: View {
                         haptic.prepare()
                     } label: {
                         Label("Log Set", systemImage: "checkmark.circle.fill")
+                            .sessionReplayPublicLabel()
                             .font(.headline.weight(.black))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -180,6 +185,7 @@ struct WorkoutDetailsView: View {
                         navigateToHistory = true
                     } label: {
                         Label("History", systemImage: "clock.fill")
+                            .sessionReplayPublicLabel()
                             .font(.headline.weight(.black))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -201,6 +207,7 @@ struct WorkoutDetailsView: View {
                     if let mostRecentLoggedSet = mostRecentMatchingLoggedSet {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionTitle("Most Recent")
+                                .sessionReplayPublicLabel()
                             MostRecentLoggedSetView(mostRecentLoggedSet: mostRecentLoggedSet)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(18)
@@ -212,6 +219,7 @@ struct WorkoutDetailsView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Weight Progress")
+                            .sessionReplayPublicLabel()
                         ProgressRangeControls(selectedRange: $selectedProgressRange)
                         ProgressLineChart(
                             points: cachedProgressPoints,
@@ -239,8 +247,10 @@ struct WorkoutDetailsView: View {
         }
         .alert("Rest timer settings", isPresented: $showTimerSettingsInfo) {
             Button("OK", role: .cancel) {}
+                .sessionReplayPublicLabel()
         } message: {
             Text("You can set a default rest timer in Settings, and choose whether workouts keep individual timer durations or all use the default.")
+                .sessionReplayPublicLabel()
         }
         .alert("Rename Workout", isPresented: $shouldShowRenameWorkout) {
             TextField("Workout Name", text: $renamedWorkoutName)
@@ -249,13 +259,16 @@ struct WorkoutDetailsView: View {
             Button("Cancel", role: .cancel) {
                 clearRenameState()
             }
+            .sessionReplayPublicLabel()
 
             Button("Save") {
                 renameWorkout()
             }
+            .sessionReplayPublicLabel()
             .disabled(renamedWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } message: {
             Text("Update this workout's name without changing its sets or history.")
+                .sessionReplayPublicLabel()
         }
         .onAppear {
             visibleSets = workout.sets
@@ -579,6 +592,7 @@ private struct RestTimerCard: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Rest Timer")
+                        .sessionReplayPublicLabel()
                         .font(.title3.weight(.black))
 
                     Text(formatTime(interval))
@@ -597,6 +611,7 @@ private struct RestTimerCard: View {
 
             Stepper(value: $interval, in: 15...600, step: 15) {
                 Label("Duration", systemImage: "timer")
+                    .sessionReplayPublicLabel()
                     .font(.headline.weight(.bold))
             }
             .onChange(of: interval) { _ in
@@ -605,6 +620,7 @@ private struct RestTimerCard: View {
 
             Toggle(isOn: $autoStartsOnAddSet) {
                 Label("Start after Add Set", systemImage: "play.circle.fill")
+                    .sessionReplayPublicLabel()
                     .font(.headline.weight(.bold))
             }
             .tint(AppColors.accent)
@@ -632,6 +648,7 @@ private struct RestTimerCard: View {
                     onReset()
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
+                        .sessionReplayPublicLabel()
                         .font(.headline.weight(.black))
                         .frame(width: 52, height: 48)
                         .background(AppColors.elevated)
@@ -681,6 +698,7 @@ private struct LoggedSetRow: View {
 
             Button(role: .destructive, action: deleteWithFeedback) {
                 Image(systemName: "trash.fill")
+                    .sessionReplayPublicLabel()
                     .font(.headline.weight(.bold))
                     .foregroundColor(AppColors.accent)
                     .frame(width: 36, height: 36)
@@ -753,6 +771,7 @@ private struct WorkoutSummaryMetric: View {
                 .minimumScaleFactor(0.75)
 
             Text(label)
+                .sessionReplayPublicLabel()
                 .font(.caption.weight(.black))
                 .foregroundColor(.secondary)
                 .lineLimit(1)

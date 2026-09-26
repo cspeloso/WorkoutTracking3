@@ -108,6 +108,7 @@ struct NewSetCreator2: View {
                 addSet()
             } label: {
                 Label("Add Set", systemImage: "checkmark.circle.fill")
+                    .sessionReplayPublicLabel()
                     .font(.headline.weight(.black))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 17)
@@ -122,6 +123,7 @@ struct NewSetCreator2: View {
                     Button("Done") {
                         focusedField = nil
                     }
+                    .sessionReplayPublicLabel()
                 }
             }
         }
@@ -179,6 +181,7 @@ private struct SetAdjuster<ValueField: View>: View {
             Text(title.uppercased())
                 .font(.caption.weight(.black))
                 .tracking(4)
+                .sessionReplayPublicLabel()
                 .foregroundColor(.secondary)
 
             HStack(spacing: 10) {
@@ -209,6 +212,7 @@ private struct AdjustButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.black))
                 .foregroundColor(isEmphasized ? .white : .primary)
                 .frame(maxWidth: .infinity)

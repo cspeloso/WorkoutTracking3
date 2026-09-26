@@ -1,6 +1,55 @@
 import SwiftUI
 import Clarity
 
+/// A dedicated native text view gives Clarity an explicit UIView to unmask.
+/// Use only for the Home summaries the user agreed to make visible, never
+/// routine names, free text, or individual workout values.
+struct ReplayVisibleSummaryText: UIViewRepresentable {
+    let text: String
+    var pointSize: CGFloat = 17
+    var weight: UIFont.Weight = .regular
+    var textStyle: UIFont.TextStyle = .body
+    var rounded = false
+    var color: UIColor = .label
+    var centered = false
+    var visibleInReplay = true
+
+    func makeUIView(context: Context) -> ReplaySummaryLabel {
+        let label = ReplaySummaryLabel()
+        label.numberOfLines = 1
+        label.lineBreakMode = .byTruncatingTail
+        label.adjustsFontForContentSizeCategory = true
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return label
+    }
+
+    func updateUIView(_ label: ReplaySummaryLabel, context: Context) {
+        let base = UIFont.systemFont(ofSize: pointSize, weight: weight)
+        let descriptor = rounded ? (base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor) : base.fontDescriptor
+        label.font = UIFontMetrics(forTextStyle: textStyle).scaledFont(for: UIFont(descriptor: descriptor, size: pointSize))
+        label.text = text
+        label.textColor = color
+        label.textAlignment = centered ? .center : .left
+        label.visibleInReplay = visibleInReplay
+        label.accessibilityIdentifier = visibleInReplay ? "workitoutReplaySummary" : nil
+        label.applyReplayVisibility()
+    }
+}
+
+final class ReplaySummaryLabel: UILabel {
+    var visibleInReplay = false
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        applyReplayVisibility()
+    }
+
+    func applyReplayVisibility() {
+        if visibleInReplay { ClaritySDK.unmaskView(self) }
+        else { ClaritySDK.maskView(self) }
+    }
+}
+
 extension View {
     /// Also apply to separately presented sheets/covers, which have their own roots.
     func sessionReplayProtected() -> some View {
@@ -11,33 +60,32 @@ extension View {
         modifier(SessionReplayConsentSheet(isPresented: isPresented, source: source))
     }
 
-    func sessionReplayMasked() -> some View {
-        clarityMask()
+    /// Only use on fixed interface labels, never containers or personal values.
+    func sessionReplayPublicLabel() -> some View {
+        clarityUnmask()
+    }
+
+    /// Explicitly approved Home-screen weekdays and aggregate counts only.
+    @ViewBuilder
+    func sessionReplayVisibleSummary(_ visible: Bool = true) -> some View {
+        if visible { clarityUnmask() }
+        else { self }
+    }
+
+    @ViewBuilder
+    func sessionReplayMasked(_ masked: Bool = true) -> some View {
+        if masked { clarityMask() }
+        else { self }
     }
 }
 
 private struct SessionReplayProtection: ViewModifier {
-    @ObservedObject private var replay = SessionReplayService.shared
-
     func body(content: Content) -> some View {
+        // Clarity's project-level Balanced mode handles sensitive values. Do
+        // not mask the root: a root mask wins over descendant unmask calls and
+        // makes every interface label unreadable in replay. Sensitive inputs
+        // and user-created names are masked explicitly at their own views.
         content
-            .clarityMask()
-            .safeAreaInset(edge: .top, spacing: 0) {
-                if replay.isCaptureEnabled {
-                    HStack(spacing: 8) {
-                        Label(replay.hasSessionStarted ? "Session replay on" : "Session replay starting", systemImage: "record.circle")
-                        Spacer(minLength: 8)
-                        Button("Stop") { replay.choose(.declined, source: .stopButton) }
-                            .font(.caption.weight(.bold))
-                            .accessibilityLabel("Stop session replay")
-                    }
-                    .font(.caption)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .foregroundColor(.primary)
-                    .background(AppColors.card)
-                }
-            }
     }
 }
 
@@ -112,9 +160,9 @@ struct SessionReplayExplanation: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Microsoft Clarity collects taps, scrolling, screen layout, and device information to help us understand how the app is used and improve it. These interactions are sent to Microsoft to create session replays and heatmaps.")
-            Text("Screen text and images are masked, including workout details and text you enter. We do not use these replays for advertising.")
+            Text("Custom names, text you enter, detailed workout values, and personal images are masked. Interface labels, app icons, and Home-screen weekdays and summary counts remain visible, including routine, exercise, and logged-set counts. We do not use these replays for advertising.")
                 .bold()
-            Text("This is optional. You can use every feature without it, and turn it off at any time in Settings or with the Stop button while replay is on. Turning it off stops future capture; it does not delete replays already sent.")
+            Text("This is optional. You can use every feature without it, and turn it off at any time in Settings. Turning it off stops future capture; it does not delete replays already sent.")
             Link("Microsoft Privacy Statement", destination: URL(string: "https://privacy.microsoft.com/privacystatement")!)
         }
         .font(.subheadline)

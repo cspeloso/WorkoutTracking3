@@ -24,6 +24,7 @@ struct ExerciseDetailsView: View {
         TabView {
             VStack {
                 Text("Form")
+                    .sessionReplayPublicLabel()
                 Image(exercise.formImage)
                     .resizable()
                     .scaledToFill()
@@ -33,6 +34,7 @@ struct ExerciseDetailsView: View {
             
             VStack {
                 Text("Muscles")
+                    .sessionReplayPublicLabel()
                 Image(exercise.musclesImage)
                     .resizable()
                     .scaledToFill()
@@ -60,6 +62,7 @@ struct ExerciseDetailsView: View {
                 }
                 else {
                     Text("No exercise instructions found.")
+                        .sessionReplayPublicLabel()
                 }
             }
         }

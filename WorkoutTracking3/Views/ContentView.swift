@@ -17,16 +17,16 @@ struct ContentView: View {
     var body: some View {
         TabView {
             NavigationView { HomeView() }
-                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tabItem { Label("Home", systemImage: "house.fill").sessionReplayPublicLabel() }
 
             NavigationView { RoutineView() }
-                .tabItem { Label("Routines", systemImage: "dumbbell.fill") }
+                .tabItem { Label("Routines", systemImage: "dumbbell.fill").sessionReplayPublicLabel() }
 
             NavigationView { ProgressDashboardView() }
-                .tabItem { Label("Progress", systemImage: "chart.bar.fill") }
+                .tabItem { Label("Progress", systemImage: "chart.bar.fill").sessionReplayPublicLabel() }
 
             NavigationView { SettingsView() }
-                .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+                .tabItem { Label("Settings", systemImage: "gearshape.fill").sessionReplayPublicLabel() }
         }
         .sessionReplayProtected()
         .accentColor(AppColors.accent)
@@ -63,14 +63,17 @@ struct ContentView: View {
                 hasCompletedWeightUnitPrompt = true
                 logOnboardingCompleted(weightUnit: .pounds)
             }
+            .sessionReplayPublicLabel()
 
             Button("Kilograms (kg)") {
                 UserData.shared.setWeightUnitPreference(.kilograms)
                 hasCompletedWeightUnitPrompt = true
                 logOnboardingCompleted(weightUnit: .kilograms)
             }
+            .sessionReplayPublicLabel()
         } message: {
             Text("Which unit would you like to use for logging sets? You can change this later in Settings.")
+                .sessionReplayPublicLabel()
         }
     }
 
@@ -127,8 +130,10 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Work It Out")
+                            .sessionReplayPublicLabel()
                             .font(.system(size: 42, weight: .black, design: .rounded))
                         Text(currentDayOfWeek)
+                            .sessionReplayVisibleSummary()
                             .font(.title3.weight(.semibold))
                             .foregroundColor(.secondary)
                     }
@@ -136,6 +141,7 @@ struct HomeView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Today's Workout")
+                            .sessionReplayPublicLabel()
 
                         if let todaysRoutineIndex,
                            userData.routines.indices.contains(todaysRoutineIndex) {
@@ -146,7 +152,8 @@ struct HomeView: View {
                                 RoutineCard(
                                     routine: userData.routines[todaysRoutineIndex],
                                     accent: .green,
-                                    showDayBadge: true
+                                    showDayBadge: true,
+                                    showsSummaryInReplay: true
                                 )
                             }
                             .buttonStyle(.plain)
@@ -159,6 +166,7 @@ struct HomeView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Your Stats")
+                            .sessionReplayPublicLabel()
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
                             StatTile(icon: "square.stack.3d.up.fill", value: "\(stats.routineCount)", label: "Routines", color: AppColors.accent)
                             StatTile(icon: "heart.text.square.fill", value: "\(stats.exerciseCount)", label: "Exercises", color: AppColors.accent)
@@ -170,6 +178,7 @@ struct HomeView: View {
                     if !activeRoutineIndices.isEmpty {
                         VStack(alignment: .leading, spacing: 14) {
                             SectionTitle("Quick Start")
+                                .sessionReplayPublicLabel()
                             ForEach(activeRoutineIndices, id: \.self) { index in
                                 Button {
                                     activeRoutineID = userData.routines[index].id
@@ -178,7 +187,8 @@ struct HomeView: View {
                                     RoutineCard(
                                         routine: userData.routines[index],
                                         accent: AppColors.accent,
-                                        showDayBadge: false
+                                        showDayBadge: false,
+                                        showsSummaryInReplay: true
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -350,6 +360,7 @@ private struct LiveRoutineDetailsRoute: View {
             RoutineDetailsView(routine: binding)
         } else {
             Text("Routine not found.")
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.bold))
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -407,11 +418,13 @@ struct ProgressDashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     Text("Progress")
+                        .sessionReplayPublicLabel()
                         .font(.system(size: 42, weight: .black, design: .rounded))
                         .padding(.top, 28)
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Lifetime Stats")
+                            .sessionReplayPublicLabel()
 
                         VStack(spacing: 12) {
                             HStack(spacing: 12) {
@@ -527,18 +540,20 @@ struct StatTile: View {
     let value: String
     let label: String
     let color: Color
+    @ScaledMetric(relativeTo: .largeTitle) private var valueHeight = 41.0
+    @ScaledMetric(relativeTo: .subheadline) private var labelHeight = 21.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Image(systemName: icon)
+                .sessionReplayPublicLabel()
                 .font(.title3.weight(.semibold))
                 .foregroundColor(color)
             Spacer(minLength: 4)
-            Text(value)
-                .font(.system(size: 34, weight: .black, design: .rounded))
-            Text(label)
-                .font(.subheadline.weight(.bold))
-                .foregroundColor(.secondary)
+            ReplayVisibleSummaryText(text: value, pointSize: 34, weight: .black, textStyle: .largeTitle, rounded: true)
+                .frame(height: valueHeight)
+            ReplayVisibleSummaryText(text: label, pointSize: 15, weight: .bold, textStyle: .subheadline, color: .secondaryLabel)
+                .frame(height: labelHeight)
         }
         .frame(maxWidth: .infinity, minHeight: 122, alignment: .leading)
         .padding(18)
@@ -552,19 +567,19 @@ struct RoutineCard: View {
     let routine: Routine
     let accent: Color
     let showDayBadge: Bool
+    var showsSummaryInReplay = false
+    @ScaledMetric(relativeTo: .subheadline) private var summaryHeight = 21.0
 
     var body: some View {
         HStack(spacing: 16) {
             if showDayBadge {
-                Text(dayAbbreviation)
-                    .font(.caption.weight(.black))
-                    .tracking(2)
-                    .foregroundColor(.white)
+                ReplayVisibleSummaryText(text: dayAbbreviation, pointSize: 12, weight: .black, textStyle: .caption1, color: .white, centered: true, visibleInReplay: showsSummaryInReplay)
                     .frame(width: 58, height: 42)
                     .background(accent)
                     .cornerRadius(8)
             } else {
                 Image(systemName: "dumbbell.fill")
+                    .sessionReplayPublicLabel()
                     .font(.title3.weight(.bold))
                     .foregroundColor(AppColors.accent)
                     .frame(width: 48, height: 48)
@@ -574,16 +589,21 @@ struct RoutineCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(routineTitle)
+                    .sessionReplayMasked(!routine.name.isEmpty)
                     .font(.title3.weight(.black))
                     .lineLimit(1)
-                Text("\(routine.weekday.isEmpty ? "No day" : routine.weekday) · \(routine.workouts.count) exercise\(routine.workouts.count == 1 ? "" : "s")")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundColor(.secondary)
+                ReplayVisibleSummaryText(
+                    text: "\(routine.weekday.isEmpty ? "No day" : routine.weekday) · \(routine.workouts.count) exercise\(routine.workouts.count == 1 ? "" : "s")",
+                    pointSize: 15, weight: .bold, textStyle: .subheadline,
+                    color: .secondaryLabel, visibleInReplay: showsSummaryInReplay
+                )
+                .frame(height: summaryHeight)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
+                .sessionReplayPublicLabel()
                 .font(.title3.weight(.bold))
                 .foregroundColor(.secondary)
         }
@@ -612,15 +632,18 @@ struct EmptyTodayCard: View {
     var body: some View {
         VStack(spacing: 18) {
             Image(systemName: "calendar")
+                .sessionReplayPublicLabel()
                 .font(.system(size: 36, weight: .semibold))
                 .foregroundColor(.secondary)
 
             Text("No routine scheduled for today")
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.bold))
                 .foregroundColor(.secondary)
 
             Button(action: createRoutine) {
                 Text("Create Routine")
+                    .sessionReplayPublicLabel()
                     .font(.headline.weight(.black))
                     .foregroundColor(.white)
                     .padding(.horizontal, 28)
@@ -656,6 +679,7 @@ struct SummaryMetric: View {
         HStack(spacing: 12) {
             if let systemImage {
                 Image(systemName: systemImage)
+                .sessionReplayPublicLabel()
                     .font(.headline.weight(.black))
                     .foregroundColor(AppColors.accent)
                     .frame(width: 34, height: 34)
@@ -670,6 +694,7 @@ struct SummaryMetric: View {
                     .minimumScaleFactor(0.8)
 
                 Text(label)
+                .sessionReplayPublicLabel()
                     .font(.caption.weight(.bold))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
@@ -995,6 +1020,7 @@ struct ProgressLineChart: View {
                             let currentLocation = chartLocation(for: currentPoint, size: proxy.size)
 
                             Text("Current")
+                                .sessionReplayPublicLabel()
                                 .font(.caption2.weight(.black))
                                 .foregroundColor(AppColors.success)
                                 .padding(.horizontal, 7)
@@ -1140,6 +1166,7 @@ struct ChartSummaryValue: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label.uppercased())
+                .sessionReplayPublicLabel()
                 .font(.caption2.weight(.black))
                 .foregroundColor(.secondary)
             Text(value)
@@ -1165,6 +1192,7 @@ struct ProgressBarChart: View {
         VStack(alignment: .leading, spacing: 12) {
             if records.isEmpty {
                 Text("Log sets to build your chart.")
+                    .sessionReplayPublicLabel()
                     .font(.subheadline.weight(.bold))
                     .foregroundColor(.secondary)
                     .padding(18)
@@ -1173,6 +1201,7 @@ struct ProgressBarChart: View {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(record.name)
+                                .sessionReplayMasked()
                                 .font(.caption.weight(.bold))
                                 .lineLimit(1)
                             Spacer()
@@ -1218,6 +1247,7 @@ struct PersonalRecordCard: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
                 Text(record.name)
+                    .sessionReplayMasked()
                     .font(.title3.weight(.black))
                 Spacer()
                 Text("\(record.setCount) set\(record.setCount == 1 ? "" : "s")")
@@ -1247,12 +1277,14 @@ struct RecordMetric: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: systemImage)
+                .sessionReplayPublicLabel()
                 .foregroundColor(color)
             Text(value)
                 .font(.headline.weight(.black))
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
             Text(label)
+                .sessionReplayPublicLabel()
                 .font(.caption.weight(.bold))
                 .foregroundColor(.secondary)
                 .lineLimit(1)
@@ -1265,8 +1297,10 @@ struct EmptyRecordsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No personal records yet")
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.black))
             Text("Log sets in a workout and your best weight, reps, and estimated strength will appear here.")
+                .sessionReplayPublicLabel()
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
         }

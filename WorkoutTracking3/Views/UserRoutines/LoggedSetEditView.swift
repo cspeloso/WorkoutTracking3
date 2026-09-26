@@ -18,6 +18,7 @@ struct LoggedSetEditView: View {
         Form {
             Section {
                 Text("Change Logged Set Date")
+                    .sessionReplayPublicLabel()
                     .font(.headline)
                 
                 DatePicker("Logged Set Date", selection: $loggedSet.loggedOnDate, displayedComponents: [.date])

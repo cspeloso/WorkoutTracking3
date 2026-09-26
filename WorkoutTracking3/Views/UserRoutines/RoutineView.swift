@@ -85,6 +85,7 @@ struct RoutineView: View {
                 Section {
                     HStack {
                         Text("Routines")
+                            .sessionReplayPublicLabel()
                             .font(.system(size: 42, weight: .black, design: .rounded))
 
                         Spacer()
@@ -93,6 +94,7 @@ struct RoutineView: View {
                             shouldAddRoutine = true
                         } label: {
                             Image(systemName: "plus")
+                                .sessionReplayPublicLabel()
                                 .font(.system(size: 28, weight: .regular))
                                 .foregroundColor(.white)
                                 .frame(width: 64, height: 64)
@@ -130,6 +132,7 @@ struct RoutineView: View {
                                     archiveRoutine(at: index)
                                 } label: {
                                     Label("Archive", systemImage: "archivebox")
+                                        .sessionReplayPublicLabel()
                                 }
                                 .tint(.secondary)
 
@@ -137,6 +140,7 @@ struct RoutineView: View {
                                     deleteRoutine(at: index)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
+                                        .sessionReplayPublicLabel()
                                 }
                             }
                         }
@@ -172,6 +176,7 @@ struct RoutineView: View {
                     .buttonStyle(.plain)
                 } header: {
                     SectionTitle("More")
+                        .sessionReplayPublicLabel()
                 }
                 .listRowInsets(EdgeInsets(top: 7, leading: 22, bottom: 7, trailing: 22))
                 .listRowBackground(Color.clear)
@@ -302,8 +307,10 @@ private struct TemplatesRoutineView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Templates")
+                            .sessionReplayPublicLabel()
                             .font(.system(size: 42, weight: .black, design: .rounded))
                         Text("Start with a structure, then tune it to fit.")
+                            .sessionReplayPublicLabel()
                             .font(.subheadline.weight(.bold))
                             .foregroundColor(.secondary)
                     }
@@ -355,8 +362,10 @@ private struct ArchivedRoutinesView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Archived")
+                            .sessionReplayPublicLabel()
                             .font(.system(size: 42, weight: .black, design: .rounded))
                         Text("Hidden from active lists. History still counts.")
+                            .sessionReplayPublicLabel()
                             .font(.subheadline.weight(.bold))
                             .foregroundColor(.secondary)
                     }
@@ -388,6 +397,7 @@ private struct ArchivedRoutinesView: View {
                                     unarchiveRoutine(at: index)
                                 } label: {
                                     Label("Unarchive", systemImage: "archivebox.fill")
+                                        .sessionReplayPublicLabel()
                                 }
                                 .tint(AppColors.today)
 
@@ -395,6 +405,7 @@ private struct ArchivedRoutinesView: View {
                                     deleteRoutine(at: index)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
+                                        .sessionReplayPublicLabel()
                                 }
                             }
                         }
@@ -474,6 +485,7 @@ private struct HomeHeroCard: View {
             
             Button(action: startWorkout) {
                 Label("Start Workout", systemImage: "play.fill")
+                    .sessionReplayPublicLabel()
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -485,8 +497,10 @@ private struct HomeHeroCard: View {
             
             HStack(spacing: 8) {
                 Label("No setup required", systemImage: "bolt.fill")
+                    .sessionReplayPublicLabel()
                 Spacer()
                 Label("Track sets now", systemImage: "checkmark.circle.fill")
+                    .sessionReplayPublicLabel()
             }
             .font(.caption)
             .foregroundColor(.secondary)
@@ -501,12 +515,15 @@ private struct EmptyRoutineCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Build your own routine")
+                .sessionReplayPublicLabel()
                 .font(.headline)
             Text("Plan a repeatable day when you want more structure.")
+                .sessionReplayPublicLabel()
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
             Text("Create Routine")
+                .sessionReplayPublicLabel()
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(Color(red: 221/255, green: 69/255, blue: 36/255))
         }
@@ -522,6 +539,7 @@ private struct TemplateRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "square.grid.2x2.fill")
+                .sessionReplayPublicLabel()
                 .font(.title3)
                 .foregroundColor(Color(red: 221/255, green: 69/255, blue: 36/255))
                 .frame(width: 32, height: 32)
@@ -555,6 +573,7 @@ private struct TemplateCard: View {
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: "sparkles")
+                .sessionReplayPublicLabel()
                 .font(.title3.weight(.bold))
                 .foregroundColor(AppColors.accent)
                 .frame(width: 48, height: 48)
@@ -573,6 +592,7 @@ private struct TemplateCard: View {
             Spacer()
 
             Image(systemName: "plus")
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.bold))
                 .foregroundColor(.secondary)
         }
@@ -611,6 +631,7 @@ private struct RoutineDestinationCard: View {
             Spacer()
 
             Image(systemName: "chevron.right")
+                .sessionReplayPublicLabel()
                 .font(.title3.weight(.bold))
                 .foregroundColor(.secondary)
         }
@@ -625,8 +646,10 @@ private struct EmptyArchivedRoutinesCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("No archived routines")
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.black))
             Text("Archive old routines to keep your main list focused without losing their history.")
+                .sessionReplayPublicLabel()
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.secondary)
         }
@@ -645,6 +668,7 @@ private struct RoutineRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(routine.name.isEmpty ? routine.weekday : routine.name)
+                .sessionReplayMasked(!routine.name.isEmpty)
                 .font(.headline)
                 .padding(.top, 6)
                 .foregroundColor(

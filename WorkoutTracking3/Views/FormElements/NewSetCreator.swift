@@ -37,6 +37,7 @@ struct NewSetCreator: View {
         //  weight
         HStack {
             Text("Weight")
+                .sessionReplayPublicLabel()
                 .font(.headline)
             
             Spacer()
@@ -51,6 +52,7 @@ struct NewSetCreator: View {
                         Button("Done"){
                             isWeightInputActive = false
                         }
+                        .sessionReplayPublicLabel()
                     }
                 }
         }
@@ -60,6 +62,7 @@ struct NewSetCreator: View {
             let newSet = Workout.Set(reps: reps, weight: weight)
             sets.append(newSet)
         }
+        .sessionReplayPublicLabel()
     }
 }
 

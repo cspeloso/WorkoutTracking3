@@ -46,12 +46,15 @@ struct AddWorkoutView: View {
                     Button("Add") {
                         createWorkout(named: customExerciseName)
                     }
+                    .sessionReplayPublicLabel()
                     .disabled(customExerciseName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             } header: {
                 Text("Custom Exercise")
+                    .sessionReplayPublicLabel()
             } footer: {
                 Text("After choosing an exercise, you will go straight to logging sets.")
+                    .sessionReplayPublicLabel()
             }
             
             Section {
@@ -64,6 +67,7 @@ struct AddWorkoutView: View {
                                 .foregroundColor(.primary)
                             Spacer()
                             Image(systemName: "plus.circle.fill")
+                                .sessionReplayPublicLabel()
                                 .foregroundColor(Color(red: 221/255, green: 69/255, blue: 36/255))
                         }
                     }
@@ -71,6 +75,7 @@ struct AddWorkoutView: View {
                 }
             } header: {
                 Text("Exercises")
+                    .sessionReplayPublicLabel()
             }
         }
         .searchable(text: $searchText, prompt: "Search exercises")

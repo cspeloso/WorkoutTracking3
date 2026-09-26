@@ -44,6 +44,7 @@ struct RoutineDetailsView: View {
                                     }
                             } else {
                                 Text(routine.name.isEmpty ? "Routine" : routine.name)
+                                    .sessionReplayMasked(!routine.name.isEmpty)
                                     .font(.system(size: 36, weight: .black, design: .rounded))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
@@ -64,6 +65,7 @@ struct RoutineDetailsView: View {
                                             .minimumScaleFactor(0.8)
 
                                         Image(systemName: "chevron.down")
+                                            .sessionReplayPublicLabel()
                                             .font(.caption.weight(.black))
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,6 +87,7 @@ struct RoutineDetailsView: View {
                             shouldShowAddWorkout = true
                         } label: {
                             Image(systemName: "plus")
+                                .sessionReplayPublicLabel()
                                 .font(.system(size: 28, weight: .regular))
                                 .foregroundColor(.white)
                                 .frame(width: 64, height: 64)
@@ -100,6 +103,7 @@ struct RoutineDetailsView: View {
 
                 Section {
                     SectionTitle("Workouts")
+                        .sessionReplayPublicLabel()
 
                     if routine.workouts.isEmpty {
                         Button {
@@ -127,6 +131,7 @@ struct RoutineDetailsView: View {
                                     beginRenamingWorkout(routine.workouts[index])
                                 } label: {
                                     Label("Rename", systemImage: "pencil")
+                                        .sessionReplayPublicLabel()
                                 }
                                 .tint(AppColors.accent)
                             }
@@ -135,6 +140,7 @@ struct RoutineDetailsView: View {
                                     routine.workouts.remove(at: index)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
+                                        .sessionReplayPublicLabel()
                                 }
                             }
                             .contextMenu {
@@ -142,12 +148,14 @@ struct RoutineDetailsView: View {
                                     beginRenamingWorkout(routine.workouts[index])
                                 } label: {
                                     Label("Rename Workout", systemImage: "pencil")
+                                        .sessionReplayPublicLabel()
                                 }
 
                                 Button(role: .destructive) {
                                     routine.workouts.remove(at: index)
                                 } label: {
                                     Label("Delete Workout", systemImage: "trash")
+                                        .sessionReplayPublicLabel()
                                 }
                             }
                         }
@@ -160,6 +168,7 @@ struct RoutineDetailsView: View {
 
                 Section {
                     SectionTitle("Manage")
+                        .sessionReplayPublicLabel()
 
                     Button {
                         routine.isArchived.toggle()
@@ -211,13 +220,16 @@ struct RoutineDetailsView: View {
             Button("Cancel", role: .cancel) {
                 clearRenameState()
             }
+            .sessionReplayPublicLabel()
 
             Button("Save") {
                 renameSelectedWorkout()
             }
+            .sessionReplayPublicLabel()
             .disabled(renamedWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         } message: {
             Text("Update this workout's name without changing its sets or history.")
+                .sessionReplayPublicLabel()
         }
         .onChange(of: createdWorkoutID) { newID in
             guard let newID else {
@@ -243,6 +255,7 @@ struct RoutineDetailsView: View {
                                 presentedWorkoutRoute = nil
                             } label: {
                                 Image(systemName: "chevron.left")
+                                    .sessionReplayPublicLabel()
                                     .font(.headline.weight(.bold))
                             }
                             .accessibilityLabel("Back")
@@ -425,14 +438,17 @@ private struct EmptyWorkoutsCTA: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Add your first workout")
+                    .sessionReplayPublicLabel()
                     .font(.headline)
                 
                 Text("Choose an exercise, then start logging sets right away.")
+                    .sessionReplayPublicLabel()
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
             
             Label("Add Workout", systemImage: "plus.circle.fill")
+                .sessionReplayPublicLabel()
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -465,6 +481,7 @@ private struct WorkoutCard: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(workout.name)
+                    .sessionReplayMasked()
                     .font(.title3.weight(.black))
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
@@ -492,6 +509,7 @@ private struct WorkoutCard: View {
             Spacer()
 
             Image(systemName: "chevron.right")
+                .sessionReplayPublicLabel()
                 .font(.headline.weight(.bold))
                 .foregroundColor(.secondary.opacity(0.6))
                 .frame(width: 22)

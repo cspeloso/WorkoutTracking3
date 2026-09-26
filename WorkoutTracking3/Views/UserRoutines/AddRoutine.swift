@@ -30,8 +30,10 @@ struct AddRoutine: View {
                     .sessionReplayMasked()
                 } header: {
                     Text("Routine name")
+                        .sessionReplayPublicLabel()
                 } footer: {
                     Text("Give this routine a name like Push Day, Legs, or Full Body.")
+                        .sessionReplayPublicLabel()
                 }
                 
                 Section {
@@ -39,6 +41,7 @@ struct AddRoutine: View {
                         ForEach(weekdays, id: \.self){
                             if $0 == ""{
                                 Text("No day")
+                                    .sessionReplayPublicLabel()
                             }
                             else {
                                 Text($0)
@@ -48,6 +51,7 @@ struct AddRoutine: View {
                     .pickerStyle(.wheel)
                 } header: {
                     Text("Weekday")
+                        .sessionReplayPublicLabel()
                 }
 
                 Section {
@@ -55,6 +59,7 @@ struct AddRoutine: View {
                         createRoutine()
                     } label: {
                         Text("Create Routine")
+                            .sessionReplayPublicLabel()
                             .font(.headline.weight(.bold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)

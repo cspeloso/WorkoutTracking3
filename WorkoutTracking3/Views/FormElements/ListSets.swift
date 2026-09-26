@@ -15,6 +15,7 @@ struct ListSets: View {
     var body: some View {
         if sets.count == 0 {
             Text("No sets found.")
+                .sessionReplayPublicLabel()
         }
         else {
             List {

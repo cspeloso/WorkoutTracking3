@@ -15,6 +15,7 @@ struct NewListSets: View {
     var body: some View {
         if sets.isEmpty {
             Text("No sets recorded.")
+                .sessionReplayPublicLabel()
         } else {
             ForEach(sets) { s in
                 HStack {

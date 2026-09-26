@@ -59,6 +59,7 @@ struct LoggedSetsView: View {
                 if workout.sets.isEmpty {
                     Text("No current sets.")
                         .italic()
+                            .sessionReplayPublicLabel()
                 } else {
                     ForEach(workout.sets) { set in
                         Text("\(set.reps) reps @ \(userData.weightUnit.formattedWeight(fromStoredPounds: set.weight))")
@@ -66,12 +67,14 @@ struct LoggedSetsView: View {
                 }
             } header: {
                 Text("Current Sets")
+                    .sessionReplayPublicLabel()
                     .font(.subheadline)
             }
 
             Section {
                 if historyEntries.isEmpty {
                     Text("No logged sets")
+                        .sessionReplayPublicLabel()
                 } else {
                     ForEach(historyEntries) { entry in
                         Section {
@@ -94,15 +97,18 @@ struct LoggedSetsView: View {
                                 deleteLoggedSet(entry.source)
                             } label: {
                                 Label("Delete", systemImage: "trash")
+                                    .sessionReplayPublicLabel()
                             }
                         }
                     }
                 }
             } header: {
                 Text("Logged sets")
+                    .sessionReplayPublicLabel()
                     .font(.subheadline)
             } footer: {
                 Text("History is shared by exercise name, including archived routines.")
+                    .sessionReplayPublicLabel()
             }
         }
         .navigationTitle("\(workout.name) History")

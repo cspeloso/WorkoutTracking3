@@ -33,11 +33,13 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     Text("Settings")
+                        .sessionReplayPublicLabel()
                         .font(.system(size: 42, weight: .black, design: .rounded))
                         .padding(.top, 28)
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("About")
+                            .sessionReplayPublicLabel()
                         SettingsInfoCard(rows: [
                             SettingsInfoRow(title: "Version", value: appVersion),
                             SettingsInfoRow(title: "App Name", value: "Work It Out")
@@ -46,6 +48,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Feedback")
+                            .sessionReplayPublicLabel()
                         VStack(spacing: 12) {
                             SettingsActionButton(
                                 title: "Send feedback",
@@ -67,8 +70,10 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Units")
+                            .sessionReplayPublicLabel()
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Weight Unit")
+                                .sessionReplayPublicLabel()
                                 .font(.headline.weight(.black))
 
                             Picker("Weight Unit", selection: $userData.weightUnit) {
@@ -79,6 +84,7 @@ struct SettingsView: View {
                             .pickerStyle(.segmented)
 
                             Text("Existing workout data stays unchanged. The app converts weights for display and new set entry.")
+                                .sessionReplayPublicLabel()
                                 .font(.subheadline.weight(.bold))
                                 .foregroundColor(.secondary)
                         }
@@ -90,6 +96,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Timers")
+                            .sessionReplayPublicLabel()
                         VStack(alignment: .leading, spacing: 12) {
                             Stepper(
                                 value: Binding(
@@ -100,6 +107,7 @@ struct SettingsView: View {
                                 step: 15
                             ) {
                                 Label("Default Rest Timer", systemImage: "timer")
+                                    .sessionReplayPublicLabel()
                                     .font(.headline.weight(.black))
                             }
 
@@ -109,21 +117,25 @@ struct SettingsView: View {
 
                             Toggle(isOn: $userData.usesIndividualRestTimers) {
                                 Label("Individual Workout Timers", systemImage: "slider.horizontal.3")
+                                    .sessionReplayPublicLabel()
                                     .font(.headline.weight(.black))
                             }
                             .tint(AppColors.accent)
 
                             Text("When this is off, every workout uses the default rest timer above.")
+                                .sessionReplayPublicLabel()
                                 .font(.subheadline.weight(.bold))
                                 .foregroundColor(.secondary)
 
                             Toggle(isOn: $userData.restTimerAlertEnabled) {
                                 Label("Rest Timer Alert", systemImage: "bell.fill")
+                                    .sessionReplayPublicLabel()
                                     .font(.headline.weight(.black))
                             }
                             .tint(AppColors.accent)
 
                             Text("Play an alert when a workout rest timer reaches 0:00.")
+                                .sessionReplayPublicLabel()
                                 .font(.subheadline.weight(.bold))
                                 .foregroundColor(.secondary)
                         }
@@ -137,6 +149,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Data")
+                            .sessionReplayPublicLabel()
                         VStack(spacing: 12) {
                             SettingsActionButton(title: "Download your data", systemImage: "square.and.arrow.down") {
                                 exportData()
@@ -175,6 +188,7 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         SectionTitle("Quick Tips")
+                            .sessionReplayPublicLabel()
                         TipCard(icon: "hand.raised.fill", color: AppColors.accent, title: "Long press to delete", bodyText: "Hold down on routines or sets to delete them.")
                         TipCard(icon: "arrow.left.arrow.right", color: AppColors.accent, title: "Quick adjustments", bodyText: "Tap the +/- buttons to quickly adjust weight and reps.")
                         TipCard(icon: "checkmark.circle.fill", color: AppColors.accent, title: "Complete sets", bodyText: "Tap Log Set to record a set, then Complete Log to archive the workout.")
@@ -189,23 +203,31 @@ struct SettingsView: View {
             Button("Delete All Data", role: .destructive) {
                 userData.deleteAllDataKeepingRestoreBackup()
             }
+            .sessionReplayPublicLabel()
             Button("Cancel", role: .cancel) {}
+                .sessionReplayPublicLabel()
         } message: {
             Text("This clears your routines, workouts, sets, and history from the app. A restore copy will be available for 30 days.")
+                .sessionReplayPublicLabel()
         }
         .alert("Restore deleted data?", isPresented: $showRestoreConfirmation) {
             Button("Restore Data") {
                 userData.restoreDeletedDataBackup()
             }
+            .sessionReplayPublicLabel()
             Button("Cancel", role: .cancel) {}
+                .sessionReplayPublicLabel()
         } message: {
             Text("This replaces your current app data with the most recently deleted data backup.")
+                .sessionReplayPublicLabel()
         }
         .alert("Unable to open email", isPresented: $showFeedbackFallback) {
             Button("Copy Email") {
                 UIPasteboard.general.string = feedbackEmail
             }
+            .sessionReplayPublicLabel()
             Button("OK", role: .cancel) {}
+                .sessionReplayPublicLabel()
         } message: {
             Text("Send feedback to \(feedbackEmail).")
         }

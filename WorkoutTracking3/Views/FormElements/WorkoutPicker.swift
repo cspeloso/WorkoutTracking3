@@ -35,9 +35,11 @@ struct WorkoutPickerListView: View {
                     Button("Save Exercise") {
                         self.mode.wrappedValue.dismiss();
                     }
+                    .sessionReplayPublicLabel()
                 }
             } header: {
                 Text("Enter An Exercise Name")
+                    .sessionReplayPublicLabel()
             }
             
             //  list of pre-created workouts
@@ -63,6 +65,7 @@ struct WorkoutPickerListView: View {
                 }
             } header: {
                 Text("Or Select A Pre-Created Exercise")
+                    .sessionReplayPublicLabel()
             }
         }
         .navigationBarTitle("Select a workout")
@@ -83,10 +86,12 @@ struct WorkoutPicker: View {
         NavigationLink(destination: WorkoutPickerListView(workoutName: $workoutName)){
             if workoutName != "" {
                 Text(workoutName)
+                    .sessionReplayMasked()
             }
             else {
                 Text("Choose a workout")
                     .italic()
+                        .sessionReplayPublicLabel()
                     .foregroundColor(.gray)
             }
         }

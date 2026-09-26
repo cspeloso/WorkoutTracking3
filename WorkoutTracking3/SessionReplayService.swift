@@ -20,7 +20,6 @@ final class SessionReplayService: ObservableObject {
     enum Source: String {
         case initialPrompt = "initial_prompt"
         case settings
-        case stopButton = "stop_button"
     }
     static let consentKey = "ClaritySessionReplayConsentV1"
 
@@ -71,7 +70,7 @@ final class SessionReplayService: ObservableObject {
         logChoice(nil, source)
     }
 
-    /// Called from the visible root, after masking and the indicator are installed.
+    /// Called from the visible root to keep capture aligned with app activity.
     func setActive(_ active: Bool) {
         isActive = active
         updateCapture()
@@ -88,7 +87,6 @@ final class SessionReplayService: ObservableObject {
             return
         }
 
-        // Show the indicator before the SDK can begin capturing.
         isCaptureEnabled = true
         initializationFailed = false
         if !hasInitialized {
